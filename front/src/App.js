@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import TestPage from './pages/TestPage';
+import MapPage from './pages/MapPage';
 
 function App() {
   useEffect(() => {
@@ -12,7 +12,7 @@ function App() {
     // <Router basename={process.env.PUBLIC_URL}>
     <Router>
       <Routes>
-        <Route path="/" element={<TestPage />} />
+        <Route path="/" element={<MapPage />} />
       </Routes>
     </Router >
   );
