@@ -68,7 +68,7 @@ const DragDiv = ({ data }) => {
         borderRadius: `${size / 2}px`,
       }}
     >
-      IDEA
+      {data.context}
     </div>
   );
 };

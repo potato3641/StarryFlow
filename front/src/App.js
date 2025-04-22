@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MapPage from './pages/MapPage';
+import MainPage from './pages/MainPage';
 
 function App() {
-  useEffect(() => {
+  useEffect(() => { // 우클방지
     document.oncontextmenu = () => {
       return false;
     }
@@ -12,7 +13,9 @@ function App() {
     // <Router basename={process.env.PUBLIC_URL}>
     <Router>
       <Routes>
-        <Route path="/" element={<MapPage />} />
+        <Route path="/" element={<Navigate to="/main" replace />} />
+        <Route path="/map" element={<MapPage />} />
+        <Route path="/main" element={<MainPage />} />
       </Routes>
     </Router >
   );
