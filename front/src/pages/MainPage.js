@@ -1,7 +1,6 @@
 import './MainPage.css';
 import React from 'react';
 import MapPage from './MapPage'
-import NavDial from '../components/NavDial'
 import StarryParticles from '../components/StarryParticles'
 
 function MainPage() {
@@ -10,7 +9,6 @@ function MainPage() {
     <div>
       <MapPage />
       <StarryParticles />
-      <NavDial />
     </div>
   );
 }

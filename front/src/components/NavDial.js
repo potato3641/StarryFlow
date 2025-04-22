@@ -4,13 +4,14 @@ import { activateFabShadowStyle, deactivateFabShadowStyle } from '../style'; // 
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material'; // component
 import { Sort, Save, Share } from '@mui/icons-material'; // icon
 
-const actions = [
-  { icon: <Save />, name: 'Save' },
-  { icon: <Sort />, name: 'Sort' },
-  { icon: <Share />, name: 'Share' },
-];
+const NavDial = ({ sortLayout }) => {
 
-const NavDial = () => {
+  const actions = [
+    { icon: <Save />, name: 'Save', onclick: null },
+    { icon: <Sort />, name: 'Sort', onClick: sortLayout },
+    { icon: <Share />, name: 'Share', onClick: null },
+  ];
+
   return (
     <div>
       <SpeedDial
@@ -40,6 +41,7 @@ const NavDial = () => {
             key={action.name}
             icon={action.icon}
             tooltipTitle={action.name}
+            onClick={action.onClick}
           />
         ))}
       </SpeedDial>
