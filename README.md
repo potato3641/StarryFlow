@@ -27,3 +27,4 @@
      - 정리(집나간 개체들 가운데 모아주기)
    - drag div 만들어서 직접 연결하기 -> react flow에 스타일 붙이기로 변경
  - 작업중... darge sort : edge handle problem
+ - edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다
