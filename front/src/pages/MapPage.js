@@ -1,27 +1,20 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import './MapPage.css';
 import '@xyflow/react/dist/style.css';
-import NavDial from '../components/NavDial'
-import FlowCanvas from '../components/FlowCanvas'
+import NavDial from '../features/NavDial'
+import FlowCanvas from '../features/FlowCanvas'
 
 const MapPage = () => {
-  const flowRef = useRef();
-
-  const handleAdjustLayout = () => {
-    if (flowRef.current) {
-      flowRef.current();
-    }
-  };
 
   return (
     <div>
       <ReactFlowProvider>
-        <FlowCanvas setAdjustLayoutRef={flowRef} />
+        <FlowCanvas />
       </ReactFlowProvider>
-      <NavDial sortLayout={handleAdjustLayout} />
+      <NavDial />
     </div>
   )
 }
