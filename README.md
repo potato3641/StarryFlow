@@ -28,3 +28,23 @@
    - drag div 만들어서 직접 연결하기 -> react flow에 스타일 붙이기로 변경
  - 작업중... darge sort : edge handle problem
  - edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다
+ - redux하다가 꼬이고 내가 원하는 커스텀 상태에서 handle 수직/수평이 결국 안되는거에 화나서 그냥 connectedLine으로 변경 결정
+ - selectedNode작업 복잡해서 정리가 안된다 여기에 정리함
+   - 노드클릭(FlowCanvas/onNodeClick)
+     - setSelectedNode (empty -> id)
+     - setsLabel (empty -> label)
+     - setsFontSize (empty -> fontSize)
+   - 판넬오픈(NodePanel)
+     - empty -> state.flow.sLabel
+     - empty -> state.flow.sFontSize
+   - 판넬작성후apply(NodePanel/applySelectedNode)
+     - setsLabel (label -> newLabel)
+     - setsFontSize (fontSize -> newFontSize)
+     - activateApplyFlag (false -> true)
+   - 캔버스업데이트(FlowCanvas/useEffect)
+     - deactivateApplyFlag (true -> false)
+     - clearSelectedNode (id -> empty)
+     - clearsLabel (newLabel -> empty)
+     - clearsFontSize (newFontSize -> empty)
+   - 추후 추가될 노드 수정작업은 위에 추가해서 정리하는걸로
+ - Node-Line-Edge 구성 및 노드 수정 및 연동 기능 완료
