@@ -29,7 +29,7 @@
  - 작업중... darge sort : edge handle problem
  - edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다
  - redux하다가 꼬이고 내가 원하는 커스텀 상태에서 handle 수직/수평이 결국 안되는거에 화나서 그냥 connectedLine으로 변경 결정
- - selectedNode작업 복잡해서 정리가 안된다 여기에 정리함
+ - selectedNode작업 복잡해서 정리가 안된다 여기에 정리함(redux 값 변화)
    - 노드클릭(FlowCanvas/onNodeClick)
      - setSelectedNode (empty -> id)
      - setsLabel (empty -> label)
@@ -48,3 +48,11 @@
      - clearsFontSize (newFontSize -> empty)
    - 추후 추가될 노드 수정작업은 위에 추가해서 정리하는걸로
  - Node-Line-Edge 구성 및 노드 수정 및 연동 기능 완료
+ > 뭘해야할지 적어야지?
+   - ~~modification function에 width height도 넣어보고싶은데~~ -> 취소 : relative로 변경
+   - ~~resizer 좀만 더 확인해보기...~~ -> relative로 변경하며 확인할 필요가 없어짐
+   - ~~새 노드 생성기/복제를 잊어버리면 어떡함?????????~~ -> DnD와 adder방식중에 후자 채택(DnD하면 사이드바가 생겨야하는데 사이드바는 프로젝트 ui 컨셉과 안맞음)
+   - ~~새 노드 생성기+ 작업할 때 서브플로우 꼭 확인할것~~ -> 확인 결과 그룹화는 ui 컨셉에 안맞음
+   > 미니맵 괜찮아보이는데 생각해볼것
+   - utils에 layout.js 다시 활성화하기 이번엔 dargejs 하다가 잘 안되면 elkjs도 고려하기
+   - FitView layout할때 추가하기
