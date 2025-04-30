@@ -4,6 +4,8 @@ const initialState = {
   selectedNode: false,
   sLabel: '',
   sFontSize: 14,
+  sWidth: 140,
+  sHeight: 80,
   applyFlag: false,
 };
 

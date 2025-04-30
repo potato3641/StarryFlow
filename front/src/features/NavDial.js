@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import './NavDial.css';
 import { activateFabShadowStyle, deactivateFabShadowStyle } from '../style'; // icon style
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from '@mui/material'; // component
-import { Save, Share } from '@mui/icons-material'; // icon
+import { Save, History, Share, Settings } from '@mui/icons-material'; // icon
 
-const NavDial = () => {
+const NavDial = ({ onAdd }) => {
 
   // REDUX
   // REACT
@@ -12,6 +12,8 @@ const NavDial = () => {
 
   const actions = [
     { icon: <Save />, name: 'Save', onclick: null },
+    { icon: <History />, name: 'Restore', onclick: null },
+    { icon: <Settings />, name: 'Setting', onclick: null },
     { icon: <Share />, name: 'Share', onClick: null },
   ];
 
@@ -35,7 +37,7 @@ const NavDial = () => {
             ...activateFabShadowStyle,
           }
         }}
-        icon={<SpeedDialIcon />}
+        icon={<SpeedDialIcon onClick={onAdd} />}
       >
         {actions.map((action) => (
           <SpeedDialAction

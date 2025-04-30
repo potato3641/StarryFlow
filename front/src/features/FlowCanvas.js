@@ -17,6 +17,7 @@ import CustomNode from '../ui/CustomNode';
 import CustomEdge from '../ui/CustomEdge';
 import CustomLine from '../ui/CustomLine';
 import NodePanel from './NodePanel'
+import NavDial from '../features/NavDial'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -44,30 +45,10 @@ const initialNodes = [
     type: 'custom',
     position: { x: 0, y: 0 },
     data: { label: '0' },
-    resizable: true,
-  },
-  {
-    id: '2',
-    type: 'custom',
-    position: { x: 250, y: 320 },
-    data: { label: '0' },
-    resizable: true,
-  },
-  {
-    id: '3',
-    type: 'custom',
-    position: { x: 40, y: 300 },
-    data: { label: '0' },
-    resizable: true,
-  },
-  {
-    id: '4',
-    type: 'custom',
-    position: { x: 300, y: 0 },
-    data: { label: '0' },
-    resizable: true,
   },
 ];
+
+const getNodeId = () => `randomnode_${+new Date()}`;
 
 const FlowCanvas = () => {
   // REDUX
@@ -91,7 +72,7 @@ const FlowCanvas = () => {
             ...node.data,
             label,
             fontSize: fontSize,
-          }
+          },
         } : node
       );
       setLocalNodes(updateNodes);
@@ -149,6 +130,19 @@ const FlowCanvas = () => {
     dispatch(clearsFontSize());
   }
 
+  const onAdd = useCallback(() => {
+    const newNode = {
+      id: getNodeId(),
+      type: 'custom',
+      data: { label: '0' },
+      position: {
+        x: (Math.random() - 0.5) * 400,
+        y: (Math.random() - 0.5) * 400,
+      },
+    };
+    setLocalNodes([...nodes, newNode]);
+  }, [setLocalNodes, nodes]);
+
   return (
     <div className="wrapper">
       <ReactFlow
@@ -172,6 +166,7 @@ const FlowCanvas = () => {
       >
         {existSelectedNode && (<NodePanel />)}
       </ReactFlow>
+      <NavDial onAdd={onAdd} />
     </div>
   );
 };

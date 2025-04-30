@@ -11,9 +11,11 @@ const CustomNode = ({ data, id, selected }) => {
   const dispatch = useDispatch();
   // apply될떄를 감지해서 fontsize랑 label갖고와서 적용해야함
   useEffect(() => {
-    if (selected) {
+    if (selected) { // selected Node가 있을때 id 등록
       dispatch(setSelectedNode(id));
     }
+    if (!selected && id) // selected Node가 없는데 id가 있으면 제거
+      dispatch(setSelectedNode(false));
   }, [dispatch, id, selected])
 
   return (
