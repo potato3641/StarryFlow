@@ -98,3 +98,14 @@ export function createNodesAndEdges() {
 
   return { nodes, edges };
 }
+
+export function glowedColor(rgbaStr) {
+  const match = rgbaStr.match(/rgba?\s*\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)/);
+  if (!match) return null;
+  const [, r, g, b, a = 1] = match;
+  const glow_R = parseInt(r) + 64 > 255 ? 255 : parseInt(r) + 64;
+  const glow_G = parseInt(g) + 64 > 255 ? 255 : parseInt(g) + 64;
+  const glow_B = parseInt(b) + 64 > 255 ? 255 : parseInt(b) + 64;
+  const glow_A = parseFloat(a) - 0.05 < 0 ? 0 : parseFloat(a) - 0.05;
+  return `rgba(${glow_R}, ${glow_G}, ${glow_B}, ${glow_A})`;
+}

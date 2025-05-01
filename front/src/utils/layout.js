@@ -1,53 +1,59 @@
-import dagre from "dagre";
-import { Position } from "@xyflow/react";
+import ELK from 'elkjs/lib/elk.bundled.js';
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
+const elk = new ELK();
 
-export default function sortLayoutedElements(nodes, edges, direction) {
-  // 전처리
-  // const nodesSnapshot = nodes.map(n => ({ id: n.id, type: n.type }));
-  // console.log('nodesSnapshot:', nodesSnapshot);
-  const isVertical = direction === 'TB';
-  dagreGraph.setGraph({ rankdir: direction });
+export async function layoutWithElk(nodes, edges, direction = 'RIGHT') {
+  const elkNodes = nodes.map((node) => ({
+    id: node.id,
+    width: node.measured.width || 140,
+    height: node.measured.height || 80,
+  }));
 
-  // 노드 크기 (원하는 사이즈로)
-  const NODE_WIDTH = 172;
-  const NODE_HEIGHT = 36;
+  const elkEdges = edges.map((edge) => ({
+    id: edge.id,
+    sources: [edge.source],
+    targets: [edge.target],
+  }));
 
-  // 그래프에 노드 추가
-  nodes?.forEach((n) => {
-    dagreGraph.setNode(n.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
-  });
-  // 그래프에 엣지 추가
-  edges?.forEach((e) => {
-    dagreGraph.setEdge(e.source, e.target);
-  });
+  const graph = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': direction,
+      'elk.layered.considerModelOrder': 'true',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'CENTER',
+      'elk.layered.nodePlacement.strategy': 'LINEAR',
+      'elk.layered.edgeRouting': 'ORTHOGONAL',
 
-  // 레이아웃 계산
-  dagre.layout(dagreGraph);
+      'elk.spacing.nodeNode': '50',
+    },
+    children: elkNodes,
+    edges: elkEdges,
+  };
 
-  // 자리 배정된 좌표 업데이트
-  const layoutedNodes = nodes?.map((n) => {
-    const { x, y } = dagreGraph.node(n.id);
+  const layout = await elk.layout(graph);
+
+  const layoutedNodes = nodes.map((node) => {
+    const layoutNode = layout.children.find((n) => n.id === node.id);
     return {
-      ...n,
+      ...node,
       position: {
-        x: x - NODE_WIDTH / 2,
-        y: y - NODE_HEIGHT / 2,
+        x: Math.round(layoutNode.x),
+        y: Math.round(layoutNode.y),
       },
     };
   });
-  const layoutedEdges = edges.map((e) => ({
-    ...e,
-    sourceHandle: `${e.source}-source`,
-    targetHandle: `${e.target}-target`,
-    sourcePosition: isVertical ? Position.Bottom : Position.Right,
-    targetPosition: isVertical ? Position.Top : Position.Left,
-  }));
 
-  // const nodesSnapshot2 = layoutedNodes.map(n => ({ id: n.id, type: n.type }));
-  // console.log('nodesSnapshot:', nodesSnapshot2);
-  // console.log('origin node', layoutedNodes)
-  return { nodes: layoutedNodes || [], edges: layoutedEdges || [] };
+  const layoutedEdges = edges.map((edge) => {
+    const layoutEdge = layout.edges.find((e) => e.id === edge.id);
+    return {
+      ...edge,
+      data: {
+        ...edge.data,
+        points: layoutEdge.sections[0].bendPoints ?? [],
+      },
+    };
+  });
+
+  return { nodes: layoutedNodes, edges: layoutedEdges };
 }

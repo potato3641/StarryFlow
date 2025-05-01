@@ -9,13 +9,11 @@ export const activateFabShadowStyle = {
 }
 
 export const deactivateFabGlowStyle = {
-  background: "rgba(10, 10, 60, 0.85)",
   border: "linear-gradient(0deg, rgb(192, 192, 80) 0%, rgb(48,48, 48) 100%)",
   boxShadow: "0px 0px 20px rgba(255, 255, 204, 0.2), inset 0px 0px 8px rgba(255, 255, 204, 0.5)"
 }
 
 export const activateFabGlowStyle = {
-  background: "rgba(74, 74, 124, 0.8)",
   border: "linear-gradient(0deg, rgb(255, 255, 160) 0%, rgb(160, 160, 160) 100%)",
   boxShadow: "0px 0px 20px rgba(255, 255, 204, 0.5), inset 0px 0px 8px rgba(255, 255, 204, 0.8)"
 }
