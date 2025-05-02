@@ -1,5 +1,5 @@
 .nodePanel {
-  width: 200px;
+  max-width: 300px;
   padding: 0.5rem;
-  background-color: beige;
+  background-color: #f5f5dc;
 }

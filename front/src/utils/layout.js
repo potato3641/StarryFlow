@@ -5,8 +5,8 @@ const elk = new ELK();
 export async function layoutWithElk(nodes, edges, direction = 'RIGHT') {
   const elkNodes = nodes.map((node) => ({
     id: node.id,
-    width: node.measured.width || 140,
-    height: node.measured.height || 80,
+    width: node.measured?.width || 140,
+    height: node.measured?.height || 80,
   }));
 
   const elkEdges = edges.map((edge) => ({
@@ -21,10 +21,9 @@ export async function layoutWithElk(nodes, edges, direction = 'RIGHT') {
       'elk.algorithm': 'layered',
       'elk.direction': direction,
       'elk.layered.considerModelOrder': 'true',
-      'elk.layered.nodePlacement.bk.fixedAlignment': 'CENTER',
+      'elk.layered.nodePlacement.bk.fixedAlignment': 'LEFT',
       'elk.layered.nodePlacement.strategy': 'LINEAR',
       'elk.layered.edgeRouting': 'ORTHOGONAL',
-
       'elk.spacing.nodeNode': '50',
     },
     children: elkNodes,

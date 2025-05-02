@@ -10,6 +10,7 @@ import {
   clearsLabel,
   clearsFontSize,
   deactivateApplyFlag,
+  activateSetModeFlag,
 } from '../redux/flowSlice';
 // flow
 import {
@@ -27,9 +28,10 @@ import {
 import CustomNode from '../ui/CustomNode';
 import CustomEdge from '../ui/CustomEdge';
 import CustomLine from '../ui/CustomLine';
-import NodePanel from './NodePanel'
-import NavDial from '../features/NavDial'
-import { layoutWithElk } from '../utils/layout'
+import NodePanel from './NodePanel';
+import NavDial from '../features/NavDial';
+import { layoutWithElk } from '../utils/layout';
+import { settingNodes, settingEdges } from '../utils/settingCanvas';
 // ui
 import '@xyflow/react/dist/style.css';
 
@@ -65,6 +67,8 @@ const initialNodes = [
   },
 ];
 
+const rerender_key = 2;
+
 const getNodeId = () => `randomnode_${+new Date()}`;
 
 const FlowCanvas = () => {
@@ -75,16 +79,19 @@ const FlowCanvas = () => {
   const fontSize = useSelector((state) => state.flow.sFontSize);
   const label = useSelector((state) => state.flow.sLabel);
   const defaultNodeValue = useSelector((state) => state.flow.defaultNodeValue);
+  // REDUX FLAG
   const applyFlag = useSelector((state) => state.flow.applyFlag);
   const sortDirectionFlag = useSelector((state) => state.flow.sortDirectionFlag);
   const autoFitViewFlag = useSelector((state) => state.flow.autoFitViewFlag);
   const mapFlag = useSelector((state) => state.flow.mapFlag);
   const cycleValidateFlag = useSelector((state) => state.flow.cycleValidateFlag)
+  const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
+  const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setLocalEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState(null);
-  const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
+  const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition, getViewport } = useReactFlow();
 
   useEffect(() => {
     if (applyFlag) {
@@ -109,24 +116,30 @@ const FlowCanvas = () => {
 
   const isValidConnection = useCallback(
     (connection) => {
-      const nodes = getNodes();
       const edges = getEdges();
-      const target = nodes.find((node) => node.id === connection.target);
-      const hasCycle = (node, visited = new Set()) => {
-        if (visited.has(node.id)) return false;
+      const sourceNodeId = connection.source;
+      const outgoingEdges = edges.filter((e) => e.source === sourceNodeId);
+      const setModeValid = outgoingEdges.length === 0;
+      if (cycleValidateFlag) {
+        const nodes = getNodes();
+        const target = nodes.find((node) => node.id === connection.target);
+        const hasCycle = (node, visited = new Set()) => {
+          if (visited.has(node.id)) return false;
 
-        visited.add(node.id);
+          visited.add(node.id);
 
-        for (const outgoer of getOutgoers(node, nodes, edges)) {
-          if (outgoer.id === connection.source) return true;
-          if (hasCycle(outgoer, visited)) return true;
-        }
-      };
+          for (const outgoer of getOutgoers(node, nodes, edges)) {
+            if (outgoer.id === connection.source) return true;
+            if (hasCycle(outgoer, visited)) return true;
+          }
+        };
 
-      if (target.id === connection.source) return false;
-      return !hasCycle(target);
+        if (target.id === connection.source) return false;
+        return setModeValid && !hasCycle(target);
+      }
+      return setModeValid
     },
-    [getNodes, getEdges],
+    [getNodes, getEdges, cycleValidateFlag],
   );
 
   const onConnect = useCallback((params) => {
@@ -211,8 +224,8 @@ const FlowCanvas = () => {
     restoreFlow();
   }, [setLocalNodes, setLocalEdges, setViewport])
 
-  const handleLayout = useCallback(async () => {
-    const { nodes: newNodes, edges: newEdges } = await layoutWithElk(nodes, edges, sortDirectionFlag ? 'DOWN' : 'RIGHT');
+  const handleLayout = useCallback(async (targetNodes = nodes, targetEdges = edges) => {
+    const { nodes: newNodes, edges: newEdges } = await layoutWithElk(targetNodes, targetEdges, sortDirectionFlag ? 'DOWN' : 'RIGHT');
     setLocalNodes(newNodes);
     setLocalEdges(newEdges);
     if (autoFitViewFlag)
@@ -225,6 +238,45 @@ const FlowCanvas = () => {
     fitView({ padding: 0.2 });
   }
 
+  const zoomOut = useCallback((targetZoom = 0.1, duration = 800) => {
+    return new Promise((resolve) => {
+      const { x: startX, y: startY, zoom: startZoom } = getViewport();
+      const startTime = performance.now();
+
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const newZoom = startZoom + (targetZoom - startZoom) * progress;
+
+        setViewport({ x: startX, y: startY, zoom: newZoom });
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          resolve();
+        }
+      }
+      requestAnimationFrame(animate);
+    });
+  }, [getViewport, setViewport])
+
+  const handleSettings = useCallback(async () => {
+    setRenderCnt(rerender_key);
+    await zoomOut();
+    onSave();
+    setLocalNodes(settingNodes);
+    setLocalEdges(settingEdges);
+    dispatch(activateSetModeFlag());
+  }, [dispatch, zoomOut, setLocalEdges, setLocalNodes, onSave]);
+
+  useEffect(() => {
+    if (setModeFlag && renderCnt && nodes.filter((e) => e.id === 'Notice')) {
+      handleLayout(nodes, edges);
+      setRenderCnt(renderCnt - 1);
+    }
+    // eslint-disable-next-line
+  }, [setModeFlag, handleLayout, edges, nodes])
+
   return (
     <div className="wrapper">
       <ReactFlow
@@ -232,8 +284,8 @@ const FlowCanvas = () => {
         edges={edges} // edge data
         nodeTypes={nodeTypes} // node 컴포넌트
         edgeTypes={edgeTypes} // edge 컴포넌트
-        minZoom={0.2} // 최소 줌
-        maxZoom={3} // 최대 줌
+        minZoom={0.1} // 최소 줌
+        maxZoom={4} // 최대 줌
         connectionLineComponent={CustomLine} // cunnect 라인 컴포넌트
         connectionLineStyle={connectionLineStyle} // connect 라인 스타일
         defaultEdgeOptions={defaultEdgeOptions} // edge 기본설정
@@ -243,20 +295,22 @@ const FlowCanvas = () => {
         onPaneClick={onPaneClick} // 노드외 클릭
         onNodesDelete={onNodesDelete} // 노드 삭제 시 edge 병합
         onEdgesChange={onEdgesChange} // edge 병합 작업용
-        {...(cycleValidateFlag && { isValidConnection: isValidConnection })} // 싸이클방지
+        {...((cycleValidateFlag || setModeFlag) && { isValidConnection: isValidConnection })} // 싸이클방지
         onInit={setRfInstance} // ref for save/restore
         selectNodesOnDrag={false} // 드래그 시 select되는 기능 false
         fitView
       >
-        {existSelectedNode && (<NodePanel />)}
-        {mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
+        {!(setModeFlag && !(id === 'value' || id === 'color')) && existSelectedNode && (<NodePanel />)}
+        {!setModeFlag && mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
       </ReactFlow>
       <NavDial
         onAdd={onAdd}
-        onSave={onSave}
         onRestore={onRestore}
         onFit={handleFitView}
-        onSort={handleLayout} />
+        onSort={handleLayout}
+        goSet={handleSettings}
+        onSave={onSave}
+      />
     </div>
   );
 };

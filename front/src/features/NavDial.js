@@ -3,25 +3,42 @@ import './NavDial.css';
 import { activateFabShadowStyle, deactivateFabShadowStyle } from '../style'; // icon style
 import { SpeedDial, SpeedDialAction, Snackbar, Slide, Box } from '@mui/material'; // component
 import Tooltip from '@mui/material/Tooltip';
-import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add } from '@mui/icons-material'; // icon
+import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified } from '@mui/icons-material'; // icon
 import { keyframes } from '@mui/system';
+import { useSelector } from 'react-redux';
 
-const dialIcon = (onAdd) => {
+const dialIcon = (onAdd, flag) => {
   return (
-    <Tooltip title="New Node" placement='left-end'>
-      <Box
-        sx={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          pointerEvents: 'auto',
-        }}
-        onClick={() => { console.log('hi'); onAdd(); }}
-      >
-        <Add />
-      </Box>
+    <Tooltip title="Setting Complete" placement='left'>
+      {flag ? (
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'auto',
+          }}
+          onClick={() => { onAdd(); }} // 정상화하는 핸들러 갖고와!
+        >
+          <Verified />
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'auto',
+          }}
+          onClick={() => { onAdd(); }}
+        >
+          <Add />
+        </Box>
+      )}
     </Tooltip>)
 }
 
@@ -34,10 +51,11 @@ function SlideTransition(props) {
   return <Slide {...props} direction="right" />;
 }
 
-const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort }) => {
+const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet }) => {
 
   // REDUX
   // REACT
+  const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   const [state, setState] = useState({
     open: false,
     Transition: SlideTransition,
@@ -60,13 +78,15 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort }) => {
   };
 
   const actions = [
-    { icon: <Save />, name: 'Save', onClick: () => { onSave(); handleClick('Saved'); } },
-    { icon: <Replay />, name: 'Restore', onClick: () => { onRestore(); handleClick('Flow Restored'); } },
-    { icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick(); } },
-    { icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted'); } },
-    { icon: <Settings />, name: 'Settings', onClick: () => { handleClick('not working'); } },
-    { icon: <Share />, name: 'Share', onClick: () => { handleClick('not working'); } },
+    { id: '1', icon: <Save />, name: 'Save', onClick: () => { onSave(); handleClick('Saved'); } },
+    { id: '2', icon: <Replay />, name: 'Restore', onClick: () => { onRestore(); handleClick('Flow Restored'); } },
+    { id: '3', icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick(); } },
+    { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted'); } },
+    { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...'); } },
+    { id: '6', icon: <Share />, name: 'Share', onClick: () => { handleClick('not working'); } },
   ];
+
+  const setModeActions = ['3', '4'];
 
   return (
     <div>
@@ -86,10 +106,10 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort }) => {
             ...activateFabShadowStyle,
           }
         }}
-        icon={dialIcon(onAdd)}
-        openIcon={dialIcon(onAdd)}
+        icon={dialIcon(onAdd, setModeFlag)}
+        openIcon={dialIcon(onAdd, setModeFlag)}
       >
-        {actions.map((action) => (
+        {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : actions).map((action) => (
           <SpeedDialAction
             sx={{
               ...deactivateFabShadowStyle,

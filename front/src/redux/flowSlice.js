@@ -16,6 +16,7 @@ const initialState = {
   autoFitViewFlag: true,
   mapFlag: true,
   cycleValidateFlag: true,
+  setModeFlag: false,
 };
 
 const flowSlice = createSlice({
@@ -55,19 +56,22 @@ const flowSlice = createSlice({
       state.sortDirectionFlag = false;
     },
     setDefaultNodeValue(state, action) {
-      state.defaultNodeValue = action.payload;
+      if (typeof action.payload !== 'undefined')
+        state.defaultNodeValue = action.payload;
     },
     clearDefaultNodeValue(state) {
       state.defaultNodeValue = 0;
     },
     setDefaultNodeAlign(state, action) {
-      state.defaultNodeAlign = action.payload;
+      if (typeof action.payload !== 'undefined')
+        state.defaultNodeAlign = action.payload;
     },
     clearDefaultNodeAlign(state) {
       state.defaultNodeAlign = 'center';
     },
     setDefaultNodeColor(state, action) {
-      state.defaultNodeColor = action.payload;
+      if (typeof action.payload !== 'undefined')
+        state.defaultNodeColor = action.payload;
     },
     clearDefaultNodeColor(state) {
       state.defaultNodeColor = 'rgba(10, 10, 60, 0.85)';
@@ -89,6 +93,12 @@ const flowSlice = createSlice({
     },
     deactivateCycleValidateFlag(state) {
       state.cycleValidateFlag = false;
+    },
+    activateSetModeFlag(state) {
+      state.setModeFlag = true;
+    },
+    deactivateSetModeFlag(state) {
+      state.setModeFlag = false;
     },
   }
 })
@@ -116,5 +126,7 @@ export const {
   deactivateCycleValidateFlag,
   setDefaultNodeColor,
   clearDefaultNodeColor,
+  activateSetModeFlag,
+  deactivateSetModeFlag,
 } = flowSlice.actions;
 export default flowSlice.reducer;
