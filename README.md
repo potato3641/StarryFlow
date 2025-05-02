@@ -1,4 +1,4 @@
-# brainSprinter
+# StarryFlow
  - 아이디어 웹 메모장
 ## motivation
  - 아이디어 정리를 보통 메모장에 하고있음
@@ -55,7 +55,6 @@
  - ~~컨셉컨셉 하다보니 이거 프로젝트 제목 컨셉에 안맞는거같은데 프로젝트명을 바꿔야겠는데 편의성을 위해 일단 놔두고 정식명칭을 정해봐야겠음~~ -> starry flow
  - develop note 점점 task목록같아지는데 이거 분할해서 할까?
  - onadd speeddial 클릭문제 해결(icon range)
-## develop task - progress
  - settings에 들어갈 옵션 완성하기
    - minimap on/off flag -> 기능완료 mapFlag
    - node 왼쪽정렬/가운데정렬/오른쪽정렬 (선택박스) -> 기능완료 defaultNodeAlign
@@ -64,12 +63,21 @@
    - sort 방향 flag -> 기능완료 sortDirectionFlag
    - cycle 형성 방제 on/off flag -> 기능완료 cycleValidateFlag
    - node default value 변경 -> 기능완료 defaultNodeValue
+   - blur node value at min-zoom flag
+ - ~~개편이 필요한것 : connectLine이 너무 얇다 클릭하기 힘들어~~ -> width 2로 늘렸으나 3을 고려해봐야할듯
+ - Setting을 모달로 하기보다 기왕 FlowCanvas 만든거 이거 이용해서 fixed nodes갖고 값 바꾸라고 하면 좋을거같다
+   - Settings Elk -> 완료
+   - Settings Fit -> 완료
+ - ~~color 팔레트 react-color로 진행하다 수많은 레거시 버그에 좌초중 react-colorful로 변경 고려~~ -> 변경 완료
+## develop task - progress
+ - 이제 connect함수 고쳐서 값이 즉각적용되도록 하기
+ - apply 눌렀을 때 즉각적용하도록 하기
 ## develop task - wait
  - map에 관한 아이디어
    - page 작업
      - 공유(hex변환 page)
      - share는 base64거쳐서, 서버로는 compress만
  - ai모델에 대한 탐색 : BART-base (500MB, 문서보다 단문 요약에 능함)
- - Setting을 모달로 하기보다 기왕 FlowCanvas 만든거 이거 이용해서 fixed nodes갖고 값 바꾸라고 하면 좋을거같다
- - 개편이 필요한것 : connectLine이 너무 얇다 클릭하기 힘들어
  - 개편이 필요한것 : nodePanel 엔터키 입력으로도 apply될수있께하기
+ - 아맞다 contextual-zoom on/off도 넣어야함 settings
+ - turboflow 선택지 만들기
