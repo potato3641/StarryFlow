@@ -11,6 +11,20 @@ import {
   clearsFontSize,
   deactivateApplyFlag,
   activateSetModeFlag,
+  deactivateSetModeFlag,
+  activateMapFlag,
+  deactivateMapFlag,
+  activateAutoFitViewFlag,
+  deactivateAutoFitViewFlag,
+  activateCycleValidateFlag,
+  deactivateCycleValidateFlag,
+  setDefaultNodeAlign,
+  TBSortDirectionFlag,
+  LRSortDirectionFlag,
+  activateZoomOutBlurFlag,
+  deactivateZoomOutBlurFlag,
+  activateTurboFlag,
+  deactivateTurboFlag,
 } from '../redux/flowSlice';
 // flow
 import {
@@ -34,6 +48,7 @@ import { layoutWithElk } from '../utils/layout';
 import { settingNodes, settingEdges } from '../utils/settingCanvas';
 // ui
 import '@xyflow/react/dist/style.css';
+import './FlowCanvas.css';
 
 const flowKey = '1q2w3e4r'
 
@@ -44,19 +59,6 @@ const nodeTypes = {
 const edgeTypes = {
   custom: CustomEdge,
 }
-
-const connectionLineStyle = {
-  stroke: '#b1b1b7',
-  strokeWidth: 2,
-};
-
-const defaultEdgeOptions = {
-  type: 'custom',
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: '#b1b1b7',
-  },
-};
 
 const initialNodes = [
   {
@@ -78,20 +80,43 @@ const FlowCanvas = () => {
   const id = useSelector((state) => state.flow.selectedNode);
   const fontSize = useSelector((state) => state.flow.sFontSize);
   const label = useSelector((state) => state.flow.sLabel);
-  const defaultNodeValue = useSelector((state) => state.flow.defaultNodeValue);
   // REDUX FLAG
   const applyFlag = useSelector((state) => state.flow.applyFlag);
+  // SETTINGS
+  const defaultNodeValue = useSelector((state) => state.flow.defaultNodeValue);
+  const defaultNodeColor = useSelector((state) => state.flow.defaultNodeColor);
+  const defaultNodeAlign = useSelector((state) => state.flow.defaultNodeAlign);
   const sortDirectionFlag = useSelector((state) => state.flow.sortDirectionFlag);
   const autoFitViewFlag = useSelector((state) => state.flow.autoFitViewFlag);
   const mapFlag = useSelector((state) => state.flow.mapFlag);
-  const cycleValidateFlag = useSelector((state) => state.flow.cycleValidateFlag)
+  const cycleValidateFlag = useSelector((state) => state.flow.cycleValidateFlag);
+  const zoomOutBlurFlag = useSelector((state) => state.flow.zoomOutBlurFlag);
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
+  const turboFlag = useSelector((state) => state.flow.turboFlag);
   // REACT
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setLocalEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState(null);
   const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition, getViewport } = useReactFlow();
+  const connectionLineStyle = {
+    stroke: turboFlag ? `url(#edge-gradient)` : '#b1b1b7',
+    strokeWidth: 3,
+    strokeOpacity: 0.75,
+  };
+
+  const defaultEdgeOptions = {
+    type: 'custom',
+    markerEnd:
+      turboFlag ? 'edge-circle' : {
+        type: MarkerType.ArrowClosed,
+        color: '#b1b1b7',
+      },
+    style: {
+      ...(turboFlag && { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 }),
+      strokeWidth: 3,
+    }
+  };
 
   useEffect(() => {
     if (applyFlag) {
@@ -119,7 +144,7 @@ const FlowCanvas = () => {
       const edges = getEdges();
       const sourceNodeId = connection.source;
       const outgoingEdges = edges.filter((e) => e.source === sourceNodeId);
-      const setModeValid = outgoingEdges.length === 0;
+      const setModeValid = setModeFlag && outgoingEdges.length > 0;
       if (cycleValidateFlag) {
         const nodes = getNodes();
         const target = nodes.find((node) => node.id === connection.target);
@@ -135,16 +160,51 @@ const FlowCanvas = () => {
         };
 
         if (target.id === connection.source) return false;
-        return setModeValid && !hasCycle(target);
+        return !setModeValid && !hasCycle(target);
       }
-      return setModeValid
+      return !setModeValid
     },
-    [getNodes, getEdges, cycleValidateFlag],
+    [getNodes, getEdges, cycleValidateFlag, setModeFlag],
   );
 
   const onConnect = useCallback((params) => {
-    setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 2 } }, eds))
-  }, [setLocalEdges]);
+    setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 3 } }, eds))
+    if (setModeFlag)
+      switch (params.source) {
+        case "1": // 1 minimap on / off flag ->  mapFlag
+          (params.target === "on") && dispatch(activateMapFlag());
+          (params.target === "off") && dispatch(deactivateMapFlag());
+          break;
+        case "2": // 2 정렬 후 자동 Fitview on / off flag ->  autoFitViewFlag
+          (params.target === "on") && dispatch(activateAutoFitViewFlag());
+          (params.target === "off") && dispatch(deactivateAutoFitViewFlag());
+          break;
+        case "3": // 3 cycle 형성 방제 on / off flag ->  cycleValidateFlag
+          (params.target === "on") && dispatch(activateCycleValidateFlag());
+          (params.target === "off") && dispatch(deactivateCycleValidateFlag());
+          break;
+        case "4": // 4 blur node value at min - zoom flag
+          (params.target === "on") && dispatch(activateZoomOutBlurFlag());
+          (params.target === "off") && dispatch(deactivateZoomOutBlurFlag());
+          break;
+        case "5": // 5 node 왼쪽정렬 / 가운데정렬 / 오른쪽정렬(선택박스) ->  defaultNodeAlign
+          (["left", "center", "right"].includes(params.target)) && dispatch(setDefaultNodeAlign(params.target));
+          break;
+        case "6": // 6 node default value 변경 -> 실시간 적용을 위해 NodePanel로 이관
+          break;
+        case "7": // 7 node color 팔레트 -> 실시간 적용을 위해 NodePanel로 이관
+          break;
+        case "8": // 8 sort 방향 flag ->  sortDirectionFlag
+          (["lr", "tb"].includes(params.target)) && dispatch(params.target === "tb" ? TBSortDirectionFlag() : LRSortDirectionFlag());
+          break;
+        case "9": // 9 turbo flow flag ->  turboFlag
+          (params.target === "on") && dispatch(activateTurboFlag());
+          (params.target === "off") && dispatch(deactivateTurboFlag());
+          break;
+        default:
+          console.error("Unauthorized Access")
+      }
+  }, [dispatch, setLocalEdges, setModeFlag]);
 
   const onNodesDelete = useCallback(
     (deleted) => {
@@ -163,6 +223,7 @@ const FlowCanvas = () => {
               id: `${source}->${target}`,
               source,
               target,
+              style: { strokeWidth: 3 },
             })),
           );
 
@@ -242,7 +303,6 @@ const FlowCanvas = () => {
     return new Promise((resolve) => {
       const { x: startX, y: startY, zoom: startZoom } = getViewport();
       const startTime = performance.now();
-
       function animate(time) {
         const elapsed = time - startTime;
         const progress = Math.min(elapsed / duration, 1);
@@ -262,12 +322,27 @@ const FlowCanvas = () => {
 
   const handleSettings = useCallback(async () => {
     setRenderCnt(rerender_key);
-    await zoomOut();
     onSave();
-    setLocalNodes(settingNodes);
-    setLocalEdges(settingEdges);
+    await zoomOut();
+    setLocalNodes(settingNodes(defaultNodeValue, defaultNodeColor));
+    setLocalEdges(settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
     dispatch(activateSetModeFlag());
-  }, [dispatch, zoomOut, setLocalEdges, setLocalNodes, onSave]);
+  }, [
+    dispatch,
+    zoomOut,
+    setLocalEdges,
+    setLocalNodes,
+    onSave,
+    defaultNodeValue,
+    defaultNodeColor,
+    defaultNodeAlign,
+    sortDirectionFlag,
+    autoFitViewFlag,
+    mapFlag,
+    cycleValidateFlag,
+    zoomOutBlurFlag,
+    turboFlag,
+  ]);
 
   useEffect(() => {
     if (setModeFlag && renderCnt && nodes.filter((e) => e.id === 'Notice')) {
@@ -277,8 +352,14 @@ const FlowCanvas = () => {
     // eslint-disable-next-line
   }, [setModeFlag, handleLayout, edges, nodes])
 
+  const handleSaveSettings = useCallback(() => {
+    setRenderCnt(rerender_key);
+    onRestore();
+    dispatch(deactivateSetModeFlag());
+  }, [dispatch, onRestore])
+
   return (
-    <div className="wrapper">
+    <div className={`wrapper ${turboFlag ? 'turbo' : ''}`}>
       <ReactFlow
         nodes={nodes} // node data
         edges={edges} // edge data
@@ -298,10 +379,32 @@ const FlowCanvas = () => {
         {...((cycleValidateFlag || setModeFlag) && { isValidConnection: isValidConnection })} // 싸이클방지
         onInit={setRfInstance} // ref for save/restore
         selectNodesOnDrag={false} // 드래그 시 select되는 기능 false
+        deleteKeyCode={['Delete', 'Backspace']} // 삭제 키 동작 설정
         fitView
       >
         {!(setModeFlag && !(id === 'value' || id === 'color')) && existSelectedNode && (<NodePanel />)}
         {!setModeFlag && mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
+        <svg>
+          <defs>
+            <linearGradient id="edge-gradient">
+              <stop offset="0%" stopColor="#ae53ba" />
+              <stop offset="100%" stopColor="#2a8af6" />
+            </linearGradient>
+
+            <marker
+              id="edge-circle"
+              viewBox="-5 -5 10 10"
+              refX="0"
+              refY="0"
+              markerUnits="strokeWidth"
+              markerWidth="10"
+              markerHeight="10"
+              orient="auto"
+            >
+              <circle stroke="#2a8af6" strokeOpacity="0.75" r="2" cx="0" cy="0" />
+            </marker>
+          </defs>
+        </svg>
       </ReactFlow>
       <NavDial
         onAdd={onAdd}
@@ -310,6 +413,7 @@ const FlowCanvas = () => {
         onSort={handleLayout}
         goSet={handleSettings}
         onSave={onSave}
+        goCanvas={handleSaveSettings}
       />
     </div>
   );

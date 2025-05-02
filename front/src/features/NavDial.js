@@ -7,7 +7,8 @@ import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified } from '@
 import { keyframes } from '@mui/system';
 import { useSelector } from 'react-redux';
 
-const dialIcon = (onAdd, flag) => {
+const dialIcon = (onAdd, goCanvas, handler, flag) => {
+  // console.log(val)
   return (
     <Tooltip title="Setting Complete" placement='left'>
       {flag ? (
@@ -20,7 +21,7 @@ const dialIcon = (onAdd, flag) => {
             justifyContent: 'center',
             pointerEvents: 'auto',
           }}
-          onClick={() => { onAdd(); }} // 정상화하는 핸들러 갖고와!
+          onClick={() => { goCanvas(); handler('Back to the Map', 7); }}
         >
           <Verified />
         </Box>
@@ -34,7 +35,7 @@ const dialIcon = (onAdd, flag) => {
             justifyContent: 'center',
             pointerEvents: 'auto',
           }}
-          onClick={() => { onAdd(); }}
+          onClick={() => { onAdd(); handler('새 노드 추가됨', 8); }}
         >
           <Add />
         </Box>
@@ -51,22 +52,25 @@ function SlideTransition(props) {
   return <Slide {...props} direction="right" />;
 }
 
-const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet }) => {
+const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas }) => {
 
   // REDUX
-  // REACT
+  // const val = useSelector((staet) => staet.flow.defaultNodeAlign)
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
+  // REACT
   const [state, setState] = useState({
     open: false,
     Transition: SlideTransition,
     message: '',
   })
 
-  const handleClick = (message = 'Done') => {
+  const handleClick = (message = 'Done', tid) => {
+    if (state.open && state.tid === tid) return;
     setState({
       ...state,
       open: true,
       message,
+      tid,
     });
   };
 
@@ -78,12 +82,12 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet }) => {
   };
 
   const actions = [
-    { id: '1', icon: <Save />, name: 'Save', onClick: () => { onSave(); handleClick('Saved'); } },
-    { id: '2', icon: <Replay />, name: 'Restore', onClick: () => { onRestore(); handleClick('Flow Restored'); } },
-    { id: '3', icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick(); } },
-    { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted'); } },
-    { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...'); } },
-    { id: '6', icon: <Share />, name: 'Share', onClick: () => { handleClick('not working'); } },
+    { id: '1', icon: <Save />, name: 'Save', onClick: () => { onSave(); handleClick('Saved', 1); } },
+    { id: '2', icon: <Replay />, name: 'Restore', onClick: () => { onRestore(); handleClick('Flow Restored', 2); } },
+    { id: '3', icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick('Done', 3); } },
+    { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted', 4); } },
+    { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...', 5); } },
+    { id: '6', icon: <Share />, name: 'Share', onClick: () => { handleClick('not working', 6); } },
   ];
 
   const setModeActions = ['3', '4'];
@@ -106,8 +110,8 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet }) => {
             ...activateFabShadowStyle,
           }
         }}
-        icon={dialIcon(onAdd, setModeFlag)}
-        openIcon={dialIcon(onAdd, setModeFlag)}
+        icon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
+        openIcon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
       >
         {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : actions).map((action) => (
           <SpeedDialAction
@@ -129,7 +133,7 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet }) => {
         onClose={handleClose}
         TransitionComponent={state.Transition}
         message={state.message}
-        key={Date.now()}
+        key={state.tid}
         autoHideDuration={800}
         ContentProps={{
           sx: {

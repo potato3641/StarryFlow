@@ -25,6 +25,9 @@ export async function layoutWithElk(nodes, edges, direction = 'RIGHT') {
       'elk.layered.nodePlacement.strategy': 'LINEAR',
       'elk.layered.edgeRouting': 'ORTHOGONAL',
       'elk.spacing.nodeNode': '50',
+      'elk.spacing.edgeNode': '20',
+      'elk.spacing.nodeEdge': '20',
+      'elk.spacing.edgeEdge': '30',
     },
     children: elkNodes,
     edges: elkEdges,
@@ -37,8 +40,8 @@ export async function layoutWithElk(nodes, edges, direction = 'RIGHT') {
     return {
       ...node,
       position: {
-        x: Math.round(layoutNode.x),
-        y: Math.round(layoutNode.y),
+        x: layoutNode.x,
+        y: layoutNode.y,
       },
     };
   });

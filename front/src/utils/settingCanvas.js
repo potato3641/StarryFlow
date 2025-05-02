@@ -1,8 +1,8 @@
-export const settingNodes = [
-  { id: 'Notice', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Option' }, deletable: false },
-  { id: 'A', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'On/Off' }, deletable: false },
-  { id: 'B', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Align' }, deletable: false },
-  { id: 'C', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Direction' }, deletable: false },
+export const settingNodes = (defaultvalue, defaultcolor) => [
+  { id: 'Notice', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Option' }, deletable: false, style: { opacity: 0, pointerEvent: 'none' } },
+  { id: 'A', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'On/Off' }, deletable: false, style: { opacity: 0, pointerEvent: 'none' } },
+  { id: 'B', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Align' }, deletable: false, style: { opacity: 0, pointerEvent: 'none' } },
+  { id: 'C', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Direction' }, deletable: false, style: { opacity: 0, pointerEvent: 'none' } },
   { id: '1', type: 'custom', position: { x: 0, y: 0 }, data: { label: '미니맵' }, deletable: false },
   { id: '2', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Sort 이후 자동 FitView' }, deletable: false },
   { id: '3', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Cycle 형성 방지' }, deletable: false },
@@ -11,18 +11,19 @@ export const settingNodes = [
   { id: '6', type: 'custom', position: { x: 0, y: 0 }, data: { label: '노드 기본 값' }, deletable: false },
   { id: '7', type: 'custom', position: { x: 0, y: 0 }, data: { label: '노드 기본 색상' }, deletable: false },
   { id: '8', type: 'custom', position: { x: 0, y: 0 }, data: { label: '정렬 방향' }, deletable: false },
+  { id: '9', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Turbo Flow' }, deletable: false },
   { id: 'on', type: 'custom', position: { x: 0, y: 0 }, data: { label: '켜기' }, deletable: false },
   { id: 'off', type: 'custom', position: { x: 0, y: 0 }, data: { label: '끄기' }, deletable: false },
   { id: 'left', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'left' }, deletable: false },
   { id: 'center', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'center' }, deletable: false },
   { id: 'right', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'right' }, deletable: false },
-  { id: 'value', type: 'custom', position: { x: 0, y: 0 }, data: { label: '0' }, deletable: false },
-  { id: 'color', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'rgba(10, 10, 60, 0.85)' }, deletable: false },
+  { id: 'value', type: 'custom', position: { x: 0, y: 0 }, data: { label: `${defaultvalue}` }, deletable: false },
+  { id: 'color', type: 'custom', position: { x: 0, y: 0 }, data: { label: `${defaultcolor}` }, deletable: false },
   { id: 'lr', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Sort→' }, deletable: false },
   { id: 'tb', type: 'custom', position: { x: 0, y: 0 }, data: { label: 'Sort↓' }, deletable: false },
 ];
 
-export const settingEdges = [
+export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycleflag, blurflag, turboflag) => [
   {
     id: 'Notice->A',
     source: 'Notice',
@@ -168,45 +169,45 @@ export const settingEdges = [
     deletable: false,
   },
   {
-    id: '1->on',
+    id: `1->${mapflag ? 'on' : 'off'}`,
     source: '1',
-    target: 'on',
+    target: `${mapflag ? 'on' : 'off'}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',
     },
   },
   {
-    id: '2->on',
+    id: `2->${fitflag ? 'on' : 'off'}`,
     source: '2',
-    target: 'on',
+    target: `${fitflag ? 'on' : 'off'}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',
     },
   },
   {
-    id: '3->on',
+    id: `3->${cycleflag ? 'on' : 'off'}`,
     source: '3',
-    target: 'on',
+    target: `${cycleflag ? 'on' : 'off'}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',
     },
   },
   {
-    id: '4->off',
+    id: `4->${blurflag ? 'on' : 'off'}`,
     source: '4',
-    target: 'off',
+    target: `${blurflag ? 'on' : 'off'}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',
     },
   },
   {
-    id: '5->center',
+    id: `5->${defaultalign}`,
     source: '5',
-    target: 'center',
+    target: `${defaultalign}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',
@@ -233,9 +234,18 @@ export const settingEdges = [
     deletable: false,
   },
   {
-    id: '8->lr',
+    id: `8->${directionflag ? 'tb' : 'lr'}`,
     source: '8',
-    target: 'lr',
+    target: `${directionflag ? 'tb' : 'lr'}`,
+    style: {
+      strokeWidth: 4,
+      stroke: '#A6FFFA',
+    },
+  },
+  {
+    id: `9->${turboflag ? 'on' : 'off'}`,
+    source: '9',
+    target: `${turboflag ? 'on' : 'off'}`,
     style: {
       strokeWidth: 4,
       stroke: '#A6FFFA',

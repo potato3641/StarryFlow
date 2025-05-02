@@ -16,7 +16,9 @@ const initialState = {
   autoFitViewFlag: true,
   mapFlag: true,
   cycleValidateFlag: true,
+  zoomOutBlurFlag: false,
   setModeFlag: false,
+  turboFlag: false,
 };
 
 const flowSlice = createSlice({
@@ -100,6 +102,18 @@ const flowSlice = createSlice({
     deactivateSetModeFlag(state) {
       state.setModeFlag = false;
     },
+    activateZoomOutBlurFlag(state) {
+      state.zoomOutBlurFlag = true;
+    },
+    deactivateZoomOutBlurFlag(state) {
+      state.zoomOutBlurFlag = false;
+    },
+    activateTurboFlag(state) {
+      state.turboFlag = true;
+    },
+    deactivateTurboFlag(state) {
+      state.turboFlag = false;
+    },
   }
 })
 
@@ -128,5 +142,9 @@ export const {
   clearDefaultNodeColor,
   activateSetModeFlag,
   deactivateSetModeFlag,
+  activateZoomOutBlurFlag,
+  deactivateZoomOutBlurFlag,
+  activateTurboFlag,
+  deactivateTurboFlag,
 } = flowSlice.actions;
 export default flowSlice.reducer;
