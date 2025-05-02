@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/starryflow/static/css/main.8dd275ce.css",
-    "main.js": "/starryflow/static/js/main.e8233341.js",
-    "static/js/453.128723b7.chunk.js": "/starryflow/static/js/453.128723b7.chunk.js",
+    "main.js": "/starryflow/static/js/main.e7efba18.js",
+    "static/js/453.6780c37c.chunk.js": "/starryflow/static/js/453.6780c37c.chunk.js",
     "index.html": "/starryflow/index.html",
     "main.8dd275ce.css.map": "/starryflow/static/css/main.8dd275ce.css.map",
-    "main.e8233341.js.map": "/starryflow/static/js/main.e8233341.js.map",
-    "453.128723b7.chunk.js.map": "/starryflow/static/js/453.128723b7.chunk.js.map"
+    "main.e7efba18.js.map": "/starryflow/static/js/main.e7efba18.js.map",
+    "453.6780c37c.chunk.js.map": "/starryflow/static/js/453.6780c37c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.8dd275ce.css",
-    "static/js/main.e8233341.js"
+    "static/js/main.e7efba18.js"
   ]
 }
