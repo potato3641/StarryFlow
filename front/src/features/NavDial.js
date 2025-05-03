@@ -3,7 +3,7 @@ import './NavDial.css';
 import { activateFabShadowStyle, deactivateFabShadowStyle } from '../style'; // icon style
 import { SpeedDial, SpeedDialAction, Snackbar, Slide, Box } from '@mui/material'; // component
 import Tooltip from '@mui/material/Tooltip';
-import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified } from '@mui/icons-material'; // icon
+import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified, RestoreFromTrash } from '@mui/icons-material'; // icon
 import { keyframes } from '@mui/system';
 import { useSelector } from 'react-redux';
 
@@ -52,17 +52,16 @@ function SlideTransition(props) {
   return <Slide {...props} direction="right" />;
 }
 
-const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas }) => {
+const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onShare, onReset }) => {
 
   // REDUX
-  // const val = useSelector((staet) => staet.flow.defaultNodeAlign)
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
   const [state, setState] = useState({
     open: false,
     Transition: SlideTransition,
     message: '',
-  })
+  });
 
   const handleClick = (message = 'Done', tid) => {
     if (state.open && state.tid === tid) return;
@@ -87,10 +86,11 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas }) =
     { id: '3', icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick('Done', 3); } },
     { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted', 4); } },
     { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...', 5); } },
-    { id: '6', icon: <Share />, name: 'Share', onClick: () => { handleClick('not working', 6); } },
+    { id: '6', icon: <Share />, name: 'Share', onClick: () => { onShare(); handleClick('Copy Url', 6); } },
+    { id: '9', icon: <RestoreFromTrash />, name: 'Clear', onClick: () => { onReset(); handleClick('Clear Flow', 9) } }
   ];
 
-  const setModeActions = ['3', '4'];
+  const setModeActions = ['3'];
 
   return (
     <div>
@@ -102,6 +102,9 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas }) =
           position: 'absolute',
           bottom: 16,
           right: 16,
+          '& .MuiSpeedDial-actions > *': {
+            my: 0.25,
+          },
           '& .MuiSpeedDial-fab': {
             color: 'black',
             ...deactivateFabShadowStyle,

@@ -10,8 +10,7 @@ function App() {
     }
   }, [])
   return (
-    // <Router basename={process.env.PUBLIC_URL}>
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <Routes>
         <Route path="/" element={<Navigate to="/main" replace />} />
         <Route path="/map" element={<MapPage />} />

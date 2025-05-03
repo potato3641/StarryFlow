@@ -1,5 +1,6 @@
 // react
 import React, { useCallback, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 // redux
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -25,6 +26,15 @@ import {
   deactivateZoomOutBlurFlag,
   activateTurboFlag,
   deactivateTurboFlag,
+  setDefaultNodeValue,
+  setDefaultNodeColor,
+  setSortDirectionFlag,
+  setAutoFitViewFlag,
+  setMapFlag,
+  setCycleValidateFlag,
+  setZoomOutBlurFlag,
+  setTurboFlag,
+  setDefaultEdgeColor,
 } from '../redux/flowSlice';
 // flow
 import {
@@ -32,7 +42,6 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
-  MarkerType,
   addEdge,
   getIncomers,
   getOutgoers,
@@ -47,10 +56,12 @@ import NavDial from '../features/NavDial';
 import { layoutWithElk } from '../utils/layout';
 import { settingNodes, settingEdges } from '../utils/settingCanvas';
 // ui
+import { decodeFlowFromUrlParam, encodeFlowToUrlParam, rgbastr2hex } from '../utils/utils';
 import '@xyflow/react/dist/style.css';
 import './FlowCanvas.css';
 
 const flowKey = '1q2w3e4r'
+const flowSet = '1q2w3e4r!'
 
 const nodeTypes = {
   custom: CustomNode,
@@ -59,15 +70,6 @@ const nodeTypes = {
 const edgeTypes = {
   custom: CustomEdge,
 }
-
-const initialNodes = [
-  {
-    id: '1',
-    type: 'custom',
-    position: { x: 0, y: 0 },
-    data: { label: '0' },
-  },
-];
 
 const rerender_key = 2;
 
@@ -85,39 +87,114 @@ const FlowCanvas = () => {
   // SETTINGS
   const defaultNodeValue = useSelector((state) => state.flow.defaultNodeValue);
   const defaultNodeColor = useSelector((state) => state.flow.defaultNodeColor);
+  const defaultEdgeColor = useSelector((state) => state.flow.defaultEdgeColor);
   const defaultNodeAlign = useSelector((state) => state.flow.defaultNodeAlign);
   const sortDirectionFlag = useSelector((state) => state.flow.sortDirectionFlag);
   const autoFitViewFlag = useSelector((state) => state.flow.autoFitViewFlag);
   const mapFlag = useSelector((state) => state.flow.mapFlag);
   const cycleValidateFlag = useSelector((state) => state.flow.cycleValidateFlag);
   const zoomOutBlurFlag = useSelector((state) => state.flow.zoomOutBlurFlag);
-  const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   const turboFlag = useSelector((state) => state.flow.turboFlag);
+  const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
+  const [prevNodeId, setPrevNodeId] = useState(null);
+  const [tempRef, setTempRef] = useState(null);
   const [renderCnt, setRenderCnt] = useState(rerender_key);
-  const [nodes, setLocalNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
   const [edges, setLocalEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState(null);
-  const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition, getViewport } = useReactFlow();
+  const location = useLocation();
+  const [flowData, setFlowData] = useState(null);
+  const { setViewport, fitView, getNodes, getEdges, getViewport, screenToFlowPosition } = useReactFlow();
+
+  /**
+   * 간선이 되지 않은 connect 과정의 선 스타일
+   */
   const connectionLineStyle = {
-    stroke: turboFlag ? `url(#edge-gradient)` : '#b1b1b7',
+    stroke: turboFlag ? `url(#edge-gradient)` : rgbastr2hex(defaultEdgeColor),
     strokeWidth: 3,
     strokeOpacity: 0.75,
   };
 
+  /**
+   * 기본 간선 스타일
+   */
   const defaultEdgeOptions = {
     type: 'custom',
     markerEnd:
-      turboFlag ? 'edge-circle' : {
-        type: MarkerType.ArrowClosed,
-        color: '#b1b1b7',
-      },
+      turboFlag ? 'edge-circle' : 'edge-arrow',
     style: {
-      ...(turboFlag && { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 }),
+      ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
       strokeWidth: 3,
     }
   };
 
+  //URL 변경을 감지하여 데이터를 등록
+  useEffect(() => {
+    const hash = location.hash;
+    const match = hash.match(/data=([^&]+)/);
+    if (match && match[1]) {
+      const decoded = decodeFlowFromUrlParam(match[1]);
+      setFlowData(decoded);
+    }
+  }, [location.hash]);
+
+  // URL데이터 등록을 감지하여 로컬에 이관
+  useEffect(() => {
+    const flow = flowData?.flow;
+    const settings = flowData?.settings;
+    if (flow) {
+      localStorage.setItem(flowKey, JSON.stringify(flow));
+      const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
+      setLocalNodes(flow.nodes || []);
+      setLocalEdges(flow.edges || []);
+      setViewport({ x, y, zoom });
+    }
+    if (settings) {
+      localStorage.setItem(flowSet, JSON.stringify(settings));
+      dispatch(setDefaultNodeValue(settings.defaultNodeValue));
+      dispatch(setDefaultNodeColor(settings.defaultNodeColor));
+      dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
+      dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
+      dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
+      dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
+      dispatch(setMapFlag(settings.mapFlag));
+      dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
+      dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
+      dispatch(setTurboFlag(settings.turboFlag));
+    }
+    if (flow && settings)
+      window.history.replaceState(null, '', window.location.pathname)
+    // eslint-disable-next-line
+  }, [flowData, dispatch]);
+
+  // 최초 혹은 재접속시 로컬에 등록된 데이터 가져오기
+  useEffect(() => {
+    // local data loading
+    const flow = JSON.parse(localStorage.getItem(flowKey));
+    if (flow) {
+      const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
+      setLocalNodes(flow.nodes || []);
+      setLocalEdges(flow.edges || []);
+      setViewport({ x, y, zoom });
+    }
+    const settings = JSON.parse(localStorage.getItem(flowSet));
+    if (settings) {
+      dispatch(setDefaultNodeValue(settings.defaultNodeValue));
+      dispatch(setDefaultNodeColor(settings.defaultNodeColor));
+      dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
+      dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
+      dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
+      dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
+      dispatch(setMapFlag(settings.mapFlag));
+      dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
+      dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
+      dispatch(setTurboFlag(settings.turboFlag));
+    }
+    // eslint-disable-next-line
+  }, [])
+
+  // 노드 수정 판넬 플래그를 감지하여 노드 수정 완료처리
   useEffect(() => {
     if (applyFlag) {
       const updateNodes = nodes.map((node) =>
@@ -139,6 +216,10 @@ const FlowCanvas = () => {
     // eslint-disable-next-line
   }, [applyFlag])
 
+  /**
+   * 노드 연결 완료 이전 동작 : 
+   * settings 모드에 진입할 경우 간선을 1개로 제한하고 cycle 방지 플래그가 활성화됐을 경우 간선 연결을 제한
+   */
   const isValidConnection = useCallback(
     (connection) => {
       const edges = getEdges();
@@ -167,6 +248,10 @@ const FlowCanvas = () => {
     [getNodes, getEdges, cycleValidateFlag, setModeFlag],
   );
 
+  /**
+   * 노드 연결 완료 동작 : 
+   * 노드 간의 간선을 추가한다. settings 모드에 진입 시 유효한 값에 연결했을 경우 settings를 변경한다.
+   */
   const onConnect = useCallback((params) => {
     setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 3 } }, eds))
     if (setModeFlag)
@@ -206,36 +291,45 @@ const FlowCanvas = () => {
       }
   }, [dispatch, setLocalEdges, setModeFlag]);
 
-  const onNodesDelete = useCallback(
-    (deleted) => {
-      setLocalEdges(
-        deleted.reduce((acc, node) => {
-          const incomers = getIncomers(node, nodes, edges);
-          const outgoers = getOutgoers(node, nodes, edges);
-          const connectedEdges = getConnectedEdges([node], edges);
+  /**
+   * 노드 삭제 이후 동작 : 
+   * 삭제된 노드에 연결되었던 간선을 노드가 없었을 때의 연결된 간선으로 대체
+   */
+  const onNodesDelete = useCallback((deleted) => {
+    dispatch(clearSelectedNode());
+    setLocalEdges(
+      deleted.reduce((acc, node) => {
+        const incomers = getIncomers(node, nodes, edges);
+        const outgoers = getOutgoers(node, nodes, edges);
+        const connectedEdges = getConnectedEdges([node], edges);
 
-          const remainingEdges = acc.filter(
-            (edge) => !connectedEdges.includes(edge),
-          );
+        const remainingEdges = acc.filter(
+          (edge) => !connectedEdges.includes(edge),
+        );
 
-          const createdEdges = incomers.flatMap(({ id: source }) =>
-            outgoers.map(({ id: target }) => ({
-              id: `${source}->${target}`,
-              source,
-              target,
-              style: { strokeWidth: 3 },
-            })),
-          );
+        const createdEdges = incomers.flatMap(({ id: source }) =>
+          outgoers.map(({ id: target }) => ({
+            id: `${source}->${target}`,
+            source,
+            target,
+            style: {
+              ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+              strokeWidth: 3
+            },
+          })),
+        );
 
-          return [...remainingEdges, ...createdEdges];
-        }, edges),
-      );
-    },
-    [setLocalEdges, nodes, edges],
-  );
+        return [...remainingEdges, ...createdEdges];
+      }, edges),
+    );
+  }, [dispatch, setLocalEdges, nodes, edges, turboFlag, defaultEdgeColor]);
 
+  /**
+   * 노드 클릭 이후 동작 : 
+   * 선택한 노드에 대한 값을 REDUX에 등록
+   */
   const onNodeClick = useCallback((e, node) => {
-    const target = nodes.filter((n) => n.id === node.id)[0]
+    const target = nodes.find((n) => n.id === node.id)
     const label = target.data?.label || ''
     const fontSize = target.data?.fontSize || 14;
     dispatch(setSelectedNode(node.id));
@@ -243,62 +337,135 @@ const FlowCanvas = () => {
     dispatch(setsFontSize(fontSize));
   }, [dispatch, nodes]);
 
+  /**
+   * flow 클릭 이후 동작 : 
+   * 선택한 노드가 없다는 의미이므로 REDUX에 등록된 선택한 노드 값을 초기화
+   */
   const onPaneClick = () => {
     dispatch(clearSelectedNode());
     dispatch(clearsLabel());
     dispatch(clearsFontSize());
   }
 
+  /**
+   * [Dial] 새 노드 추가 함수 : 
+   * 노드 기본 값을 가진 새 노드 생성. 이전 노드 값을 기억하여 이전 노드 Position의 20, 20 추가된 위치에 새 노드를 생성한다
+   */
   const onAdd = useCallback(() => {
-    const randomScreenX = Math.random() * (window.innerWidth - 140);
-    const randomScreenY = Math.random() * (window.innerHeight - 80);
-    const flowPosition = screenToFlowPosition({ x: randomScreenX, y: randomScreenY });
+    const id = getNodeId();
+    const prevNode = getNodes()?.find(node => node.id === prevNodeId);
+    const screen = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const x = typeof prevNode?.position?.x === 'number' ? prevNode.position.x + 20 : screen.x - getNodes()[0] ? getNodes()[0].measured.width / 2 : 0;
+    const y = typeof prevNode?.position?.x === 'number' ? prevNode.position.y + 20 : screen.y - getNodes()[0] ? getNodes()[0].measured.height / 2 : 0;
     const newNode = {
-      id: getNodeId(),
+      id,
       type: 'custom',
       data: { label: `${defaultNodeValue}` },
       position: {
-        x: flowPosition.x,
-        y: flowPosition.y,
+        x,
+        y,
       },
     };
     setLocalNodes([...nodes, newNode]);
-  }, [setLocalNodes, nodes, screenToFlowPosition, defaultNodeValue]);
+    setPrevNodeId(id);
+  }, [setLocalNodes, nodes, defaultNodeValue, getNodes, screenToFlowPosition, prevNodeId]);
 
+  /**
+   * settings에서 설정한 값 반환
+   */
+  const flowSettings = useCallback(() => {
+    return {
+      defaultNodeValue,
+      defaultNodeColor,
+      defaultEdgeColor,
+      defaultNodeAlign,
+      sortDirectionFlag,
+      autoFitViewFlag,
+      mapFlag,
+      cycleValidateFlag,
+      zoomOutBlurFlag,
+      turboFlag
+    };
+  }, [
+    defaultNodeValue,
+    defaultNodeColor,
+    defaultEdgeColor,
+    defaultNodeAlign,
+    sortDirectionFlag,
+    autoFitViewFlag,
+    mapFlag,
+    cycleValidateFlag,
+    zoomOutBlurFlag,
+    turboFlag
+  ])
+
+  /**
+   * [Dial] 현재 flow를 JSON으로 변환하여 로컬스토리지에 저장
+   */
   const onSave = useCallback(() => {
     if (rfInstance) {
       const flow = rfInstance.toObject();
       localStorage.setItem(flowKey, JSON.stringify(flow));
+      const settings = flowSettings();
+      localStorage.setItem(flowSet, JSON.stringify(settings))
     }
-  }, [rfInstance])
+  }, [rfInstance, flowSettings])
 
+  /**
+   * [Dial] 로컬 스토리지에 저장된 flow를 등록
+   */
   const onRestore = useCallback(() => {
     const restoreFlow = async () => {
       const flow = JSON.parse(localStorage.getItem(flowKey));
+      const settings = JSON.parse(localStorage.getItem(flowSet));
       if (flow) {
         const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
         setLocalNodes(flow.nodes || []);
         setLocalEdges(flow.edges || []);
         setViewport({ x, y, zoom });
       }
+      if (settings) { // DANGER 3회 사용이므로 따로 함수로 정리할 것
+        dispatch(setDefaultNodeValue(settings.defaultNodeValue));
+        dispatch(setDefaultNodeColor(settings.defaultNodeColor));
+        dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
+        dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
+        dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
+        dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
+        dispatch(setMapFlag(settings.mapFlag));
+        dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
+        dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
+        dispatch(setTurboFlag(settings.turboFlag));
+      }
     };
     restoreFlow();
-  }, [setLocalNodes, setLocalEdges, setViewport])
+  }, [dispatch, setLocalNodes, setLocalEdges, setViewport])
 
-  const handleLayout = useCallback(async (targetNodes = nodes, targetEdges = edges) => {
-    const { nodes: newNodes, edges: newEdges } = await layoutWithElk(targetNodes, targetEdges, sortDirectionFlag ? 'DOWN' : 'RIGHT');
-    setLocalNodes(newNodes);
-    setLocalEdges(newEdges);
-    if (autoFitViewFlag)
-      setTimeout(() => {
-        fitView({ padding: 0.2 });
-      }, 50);
-  }, [setLocalNodes, setLocalEdges, nodes, edges, fitView, sortDirectionFlag, autoFitViewFlag]);
-
+  /**
+     * [Dial] FitView를 실행하는 함수
+     */
   const handleFitView = () => {
     fitView({ padding: 0.2 });
   }
 
+  /**
+   * [Dial] 레이아웃 정렬 함수 : 
+   * Elkjs로 레이아웃을 계산하고 결과를 등록, 이후 자동 FitView 플래그에 따라 FitView 실행
+   */
+  const handleLayout = useCallback(async (targetNodes = nodes, targetEdges = edges, algorithm = 'mrtree') => {
+    const { nodes: newNodes, edges: newEdges } = await layoutWithElk(targetNodes, targetEdges, sortDirectionFlag ? 'DOWN' : 'RIGHT', algorithm);
+    setLocalNodes(newNodes);
+    setLocalEdges(newEdges);
+    if (autoFitViewFlag)
+      setTimeout(() => {
+        fitView({ padding: 0.2 }); // dependency 문제로 직접 실행
+      }, 50);
+  }, [setLocalNodes, setLocalEdges, nodes, edges, fitView, sortDirectionFlag, autoFitViewFlag]);
+
+  /**
+   * settings에 진입하는 애니메이션을 위한 함수 :
+   * 비동기 함수이므로 이 동작이 끝난 이후 다음 코드를 실행함
+   * @param {number} duration - 기본값 0.8초, 지정된 시간 동안 줌아웃을 실행
+   */
   const zoomOut = useCallback((targetZoom = 0.1, duration = 800) => {
     return new Promise((resolve) => {
       const { x: startX, y: startY, zoom: startZoom } = getViewport();
@@ -320,20 +487,31 @@ const FlowCanvas = () => {
     });
   }, [getViewport, setViewport])
 
+  /**
+   * [Dial] settings 모드로 진입하는 함수 : 
+   * 비동기 함수이며 줌아웃 이후 지정된 settings nodes와 edges를 가져와 settings 모드로 진입한다.
+   */
   const handleSettings = useCallback(async () => {
     setRenderCnt(rerender_key);
-    onSave();
+    if (rfInstance)
+      setTempRef(JSON.stringify(rfInstance.toObject()));
     await zoomOut();
-    setLocalNodes(settingNodes(defaultNodeValue, defaultNodeColor));
-    setLocalEdges(settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
     dispatch(activateSetModeFlag());
+    setLocalNodes(
+      turboFlag ?
+        settingNodes(defaultNodeValue, defaultNodeColor, defaultEdgeColor).filter(node => !['7', '10', 'nodecolor', 'edgecolor'].includes(node.id)) :
+        settingNodes(defaultNodeValue, defaultNodeColor, defaultEdgeColor));
+    setLocalEdges(
+      turboFlag ?
+        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag).filter(edge => !['Notice->7', '7->nodecolor', 'Notice->10', '10->edgecolor'].includes(edge.id)) :
+        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
   }, [
     dispatch,
     zoomOut,
     setLocalEdges,
     setLocalNodes,
-    onSave,
     defaultNodeValue,
+    defaultEdgeColor,
     defaultNodeColor,
     defaultNodeAlign,
     sortDirectionFlag,
@@ -342,21 +520,71 @@ const FlowCanvas = () => {
     cycleValidateFlag,
     zoomOutBlurFlag,
     turboFlag,
+    rfInstance,
   ]);
 
+  // settings 모드 진입을 감지하며 고치지 못한 버그로 인해 레이아웃 정렬을 renderCnt만큼 실행한다
   useEffect(() => {
     if (setModeFlag && renderCnt && nodes.filter((e) => e.id === 'Notice')) {
-      handleLayout(nodes, edges);
+      handleLayout(nodes, edges, 'layered'); // settings는 layered로
       setRenderCnt(renderCnt - 1);
     }
     // eslint-disable-next-line
   }, [setModeFlag, handleLayout, edges, nodes])
 
+  /**
+   * [Dial] settings 모드에서 이탈 시 실행하는 함수 : 
+   * settings 모드 진입 이전 상태로 되돌리며, settings에서 설정한 값을 반영한다.
+   */
   const handleSaveSettings = useCallback(() => {
+    const restoreFlow = async () => {
+      const flow = JSON.parse(tempRef);
+      if (flow) {
+        const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
+        setLocalNodes(flow.nodes || []);
+        if (!turboFlag && flow.edges) {
+          const prevEdges = flow.edges.map((edge) => {
+            return {
+              ...edge,
+              style: {
+                ...edge.style,
+                stroke: rgbastr2hex(defaultEdgeColor),
+              }
+            }
+          })
+          setLocalEdges(prevEdges || []);
+        } else
+          setLocalEdges(flow.edges);
+        setViewport({ x, y, zoom });
+      }
+    };
     setRenderCnt(rerender_key);
-    onRestore();
+    restoreFlow();
     dispatch(deactivateSetModeFlag());
-  }, [dispatch, onRestore])
+  }, [dispatch, setLocalEdges, setLocalNodes, setViewport, tempRef, turboFlag, defaultEdgeColor]);
+
+  /**
+   * [Dial] 현재 데이터를 URL로 변환하여 클립보드에 복사하는 함수
+   */
+  const urlCopy = useCallback(() => {
+    const data = {
+      flow: rfInstance.toObject(),
+      settings: flowSettings(),
+    }
+    const encoded = encodeFlowToUrlParam(data);
+    const url = `${window.location.origin}/StarryFlow/main#data=${encoded}`;
+
+    navigator.clipboard.writeText(url)
+      .catch(err => {
+        console.error('Failed to copy:', err);
+      });
+  }, [rfInstance, flowSettings])
+
+  const onReset = useCallback(() => {
+    setLocalEdges([]);
+    setLocalNodes([]);
+    dispatch(clearSelectedNode());
+  }, [dispatch, setLocalEdges, setLocalNodes])
 
   return (
     <div className={`wrapper ${turboFlag ? 'turbo' : ''}`}>
@@ -382,15 +610,14 @@ const FlowCanvas = () => {
         deleteKeyCode={['Delete', 'Backspace']} // 삭제 키 동작 설정
         fitView
       >
-        {!(setModeFlag && !(id === 'value' || id === 'color')) && existSelectedNode && (<NodePanel />)}
+        {!(setModeFlag && !(id === 'value' || id === 'nodecolor' || id === 'edgecolor')) && existSelectedNode && (<NodePanel />)}
         {!setModeFlag && mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
         <svg>
           <defs>
-            <linearGradient id="edge-gradient">
+            <linearGradient id="edge-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
               <stop offset="0%" stopColor="#ae53ba" />
               <stop offset="100%" stopColor="#2a8af6" />
             </linearGradient>
-
             <marker
               id="edge-circle"
               viewBox="-5 -5 10 10"
@@ -403,6 +630,22 @@ const FlowCanvas = () => {
             >
               <circle stroke="#2a8af6" strokeOpacity="0.75" r="2" cx="0" cy="0" />
             </marker>
+            <marker
+              id="edge-arrow"
+              viewBox="0 0 20 20"
+              refX="13"
+              refY="10"
+              markerWidth="10"
+              markerHeight="10"
+              orient="auto"
+              markerUnits="userSpaceOnUse"
+            >
+              <path
+                d="M2,2 L18,10 L2,18 C4,12 4,8 2,2 Z"
+                fill={rgbastr2hex(defaultEdgeColor)}
+                fillOpacity="1"
+              />
+            </marker>
           </defs>
         </svg>
       </ReactFlow>
@@ -414,6 +657,8 @@ const FlowCanvas = () => {
         goSet={handleSettings}
         onSave={onSave}
         goCanvas={handleSaveSettings}
+        onShare={urlCopy}
+        onReset={onReset}
       />
     </div>
   );

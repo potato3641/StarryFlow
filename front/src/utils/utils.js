@@ -1,4 +1,5 @@
 import { Position, MarkerType } from '@xyflow/react';
+import pako from 'pako';
 
 // this helper function returns the intersection point
 // of the line between the center of the intersectionNode and the target node
@@ -121,5 +122,26 @@ export function rgbastr2hex(rgbastr) {
   const match = rgbastr.match(/rgba?\s*\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\s*\)/);
   if (!match) return null;
   const [, r, g, b,] = match;
-  return `#${parseInt(r).toString(16)}${parseInt(g).toString(16)}${parseInt(b).toString(16)}`
+  return `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`
+}
+
+export function encodeFlowToUrlParam(obj) {
+  const jsonStr = JSON.stringify(obj);
+  const compressed = pako.deflate(jsonStr);
+  const base64 = btoa(String.fromCharCode(...compressed));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function decodeFlowFromUrlParam(param) {
+  try {
+    const base64 = param.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = '='.repeat((4 - base64.length % 4) % 4);
+    const binaryStr = atob(base64 + pad);
+    const byteArray = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
+    const jsonStr = pako.inflate(byteArray, { to: 'string' });
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Fail to decode', e);
+    return null;
+  }
 }
