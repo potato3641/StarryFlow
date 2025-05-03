@@ -8,8 +8,8 @@
 ## goal
  1. 마인드맵 형식의 웹 메모장
  2. 메모를 로컬 스토리지에 저장
- 3. 추후 가능하다면 클라우드에 저장
- 4. 추후 가능하다면 메모를 ai모델을 사용해서 요약 및 검색 기능까지...
+ 3. ~~추후 가능하다면 클라우드에 저장~~ -> URL로 변경
+ 4. ~~추후 가능하다면 메모를 ai모델을 사용해서 요약 및 검색 기능까지...~~ -> 소켓 통신을 이용한 양방향 협업 기능
 ## develop task - complete
  - map에 관한 아이디어
    - 디자인은 밤하늘 컨셉으로
@@ -21,6 +21,8 @@
    - page 작업
      - ~~저장(cloud용 버튼만 일단)~~ -> localstorage로 일단 완료
      - ~~정리(집나간 개체들 가운데 모아주기)~~ -> 완료
+     - ~~공유(hex변환 page)~~
+     - ~~share는 base64거쳐서, 서버로는 compress만~~
    - ~~drag div 만들어서 직접 연결하기~~ -> react flow에 스타일 붙이기로 변경
  - ~~작업중... darge sort : edge handle problem~~ -> elkjs로 변경됨
  - ~~edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다~~ -> 완료
@@ -33,13 +35,15 @@
    - 판넬오픈(NodePanel)
      - empty -> state.flow.sLabel
      - empty -> state.flow.sFontSize
-     - empty -> state.flow.defaultColor
+     - empty -> state.flow.defaultNodeColor
+     - empty -> state.flow.defaultEdgeColor
      - empty -> state.flow.defaultValue
    - 판넬작성후apply(NodePanel/applySelectedNode)
      - setsLabel (label -> newLabel)
      - setsFontSize (fontSize -> newFontSize)
      - activateApplyFlag (false -> true)
-     - setDefaultNodeColor (color -> newColor)
+     - setDefaultNodeColor (nodecolor -> newNodeColor)
+     - setDefaultEdgeColor (edgecolor -> newEdgeColor)
      - setDefaultNodeValue (value -> newValue)
    - 캔버스업데이트(FlowCanvas/useEffect)
      - deactivateApplyFlag (true -> false)
@@ -78,10 +82,29 @@
  - ~~개편이 필요한것 : nodePanel 엔터키 입력으로도 apply될수있께하기~~ -> 완료
  - ~~아맞다 contextual-zoom on/off도 넣어야함 settings~~ -> 완료
  - ~~turboflow 선택지 만들기~~ -> 완료
+ - ~~gh pages deploy하기~~ -> 완료
+  - ~~ai모델에 대한 탐색 : BART-base (500MB, 문서보다 단문 요약에 능함)~~ -> 좋은건 너무 크거나 라이센스 문제가 있고 그게 해결된것들은 오류만 뱉거나 한국어를 잘 못함
+ - 1차 사용성 점검
+   - 고쳐야할 버그
+     - ~~settings 가기전에 navdial 바뀌기~~
+     - ~~turbo 상태일때 노드 색상 변경 기능 숨기기~~
+     - ~~줄바꿈 강제로 생기게 하는 max-width 확인하기~~ -> 300px에서 500px로
+     - ~~elk 사용 직후 turbo 선이 안보임~~
+     - ~~elk layered 정렬 종류 살펴보고 바꾸거나/포기하기~~ -> mrtree로 변경
+     - ~~turbo로 나갔지만 재진입시 기본css임~~
+       - ~~이 때 자식 connect 안되는 버그 발생~~
+     - ~~재진입시 localstorage에서 안불러옴~~
+     - ~~turbo의 fit이 아슬아슬함. turbo일때는 더 조여야할듯~~
+     - ~~turbo의 nodeNode간격 넓혀야~~
+     - ~~노드 생성범위를 좁혀야...~~
+   - 필요한 기능
+     - ~~노드의 선 색을 바꾸는 기능도 추가했으면~~
+     - ~~노드 설정에 visible 추가하기 (개인설정?)~~ -> mrtree 변환 이후실효성이 없음
+     - ~~compress - base64~~
+     - ~~역변환기능도~~
+     - ~~map 초기화기능~~
 ## develop task - progress
+ - 소켓관련 자료 수집
 ## develop task - wait
- - map에 관한 아이디어
-   - page 작업
-     - 공유(hex변환 page)
-     - share는 base64거쳐서, 서버로는 compress만
- - ai모델에 대한 탐색 : BART-base (500MB, 문서보다 단문 요약에 능함)
+ - aws ec2 서버 구축하기
+ - compress 서버 전송 테스트하기
