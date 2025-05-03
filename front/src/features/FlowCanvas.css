@@ -70,6 +70,7 @@
 }
 
 .turbo .react-flow__node-custom .body {
+  padding: 10px;
   display: flex;
 }
 
@@ -79,8 +80,15 @@
   line-height: 1;
 }
 
+.react-flow__edge .react-flow__edge-path {
+  marker-end: url(#edge-arrow);
+  stroke-width: 3;
+  stroke-opacity: 0.75;
+}
+
 .turbo .react-flow__edge .react-flow__edge-path {
   stroke: url(#edge-gradient);
+  marker-end: url(#edge-circle);
   stroke-width: 3;
   stroke-opacity: 0.75;
 }

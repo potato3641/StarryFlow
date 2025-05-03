@@ -1,5 +1,6 @@
 {
-  "name": "brainsprinter",
+  "homepage": "https://potato3641.github.io/StarryFlow",
+  "name": "starryflow",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
@@ -15,6 +16,8 @@
     "@xyflow/react": "^12.6.0",
     "dagre": "^0.8.5",
     "elkjs": "^0.10.0",
+    "gh-pages": "^6.3.0",
+    "pako": "^2.1.0",
     "react": "^19.0.0",
     "react-colorful": "^5.6.1",
     "react-dom": "^19.0.0",
@@ -26,6 +29,8 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",

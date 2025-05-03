@@ -8,6 +8,7 @@ import {
   activateApplyFlag,
   setDefaultNodeValue,
   setDefaultNodeColor,
+  setDefaultEdgeColor,
 } from '../redux/flowSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { RgbaStringColorPicker } from 'react-colorful';
@@ -17,10 +18,12 @@ const NodePanel = () => {
   const id = useSelector((state) => state.flow.selectedNode);
   const label = useSelector((state) => state.flow.sLabel);
   const fontSize = useSelector((state) => state.flow.sFontSize);
-  const color = useSelector((state) => state.flow.defaultNodeColor);
+  const nodeColor = useSelector((state) => state.flow.defaultNodeColor);
+  const edgeColor = useSelector((state) => state.flow.defaultEdgeColor);
   const value = useSelector((state) => state.flow.defaultNodeValue);
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
-  const [localColor, setLocalColor] = useState(color);
+  const [localNodeColor, setLocalNodeColor] = useState(nodeColor);
+  const [localEdgeColor, setLocalEdgeColor] = useState(edgeColor);
   const [localLabel, setLocalLabel] = useState(label || '');
   const [localFontSize, setLocalFontSize] = useState(fontSize || 14);
   const dispatch = useDispatch();
@@ -28,8 +31,10 @@ const NodePanel = () => {
   useEffect(() => {
     setLocalLabel(label);
     setLocalFontSize(fontSize);
-    if (label === "color")
-      setLocalColor(color);
+    if (label === "nodecolor")
+      setLocalNodeColor(nodeColor);
+    if (label === "edgecolor")
+      setLocalEdgeColor(edgeColor);
     if (label === "value")
       setLocalLabel(value);
     // eslint-disable-next-line
@@ -38,13 +43,14 @@ const NodePanel = () => {
   const applySelectedNode = useCallback(() => {
     dispatch(setsLabel(localLabel));
     dispatch(setsFontSize(localFontSize));
-    if (id === "color")
-      dispatch(setDefaultNodeColor(localColor)); // 6 node default value 변경 
-    if (id === "value") {
+    if (id === "nodecolor")
+      dispatch(setDefaultNodeColor(localNodeColor)); // 6 node default color 변경 
+    if (id === "edgecolor")
+      dispatch(setDefaultEdgeColor(localEdgeColor)); // 9 edge default color 변경 
+    if (id === "value")
       dispatch(setDefaultNodeValue(localLabel)); // 7 node color 팔레트
-    }
     dispatch(activateApplyFlag())
-  }, [dispatch, id, localFontSize, localLabel, localColor])
+  }, [dispatch, id, localFontSize, localLabel, localEdgeColor, localNodeColor])
 
   const onKeyDown = useCallback((event) => {
     if (!event.shiftKey && event.key === 'Enter')
@@ -57,7 +63,7 @@ const NodePanel = () => {
       position="top-left"
       onKeyDown={onKeyDown}
       style={{
-        background: setModeFlag && id === "color" ? localColor : 'beige',
+        background: setModeFlag && id === "nodecolor" ? localNodeColor : 'beige',
         color: 'black',
       }}
     >
@@ -84,11 +90,18 @@ const NodePanel = () => {
           }}
         />
       </>)}
-      {setModeFlag && id === "color" && (
+      {setModeFlag && id === "nodecolor" && (<>
+        <Typography variant='h6'>Node Color </Typography>
         <RgbaStringColorPicker
-          color={localColor}
-          onChange={setLocalColor}
-        />)}
+          color={localNodeColor}
+          onChange={setLocalNodeColor}
+        /></>)}
+      {setModeFlag && id === "edgecolor" && (<>
+        <Typography variant='h6'>Edge Color </Typography>
+        <RgbaStringColorPicker
+          color={localEdgeColor}
+          onChange={setLocalEdgeColor}
+        /></>)}
       <Typography variant='h6'>Apply
         <Button onClick={applySelectedNode}>
           <Check />
