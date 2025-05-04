@@ -105,6 +105,69 @@
      - ~~map 초기화기능~~
 ## develop task - progress
  - 소켓관련 자료 수집
+ - 사전 규약 설정하기
+   - 필요한 기능?
+     - 노드 Position (x, y) - "node_move"
+      ```JSON
+        {
+          type: "node_move",
+          payload: {
+            id,
+            position: {
+              x,
+              y
+            }
+          }
+        }
+      ```
+     - 노드 변경 (label) - "node_update"
+      ```JSON
+        {
+          type: "node_update"
+          payload: {
+            id,
+            label,
+            fontSize
+          }
+        }
+      ```
+     - 노드 생성 - "node_add"
+      ```JSON
+        {
+          type: "node_add"
+          payload: {
+            id,
+            position: {
+              x,
+              y
+            }
+          }
+        }
+      ```
+     - 노드 삭제 - "node_delete"
+      ```JSON
+        {
+          type: "node_delete"
+          payload: {
+            id
+          }
+        }
+      ```
+     - 엣지 삭제 - "edge_delete"
+      ```JSON
+        {
+          type: "edge_delete"
+          payload: {
+            id
+          }
+        }
+      ```
+     - ELK 실행 - "elk_layout"
+      ```JSON
+        {
+          type: "elk_layout"
+        }
+      ```
 ## develop task - wait
  - aws ec2 서버 구축하기
  - compress 서버 전송 테스트하기
