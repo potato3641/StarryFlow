@@ -103,7 +103,6 @@
      - ~~compress - base64~~
      - ~~역변환기능도~~
      - ~~map 초기화기능~~
-## develop task - progress
  - 소켓관련 자료 수집
  - 사전 규약 설정하기
    - 필요한 기능?
@@ -168,6 +167,8 @@
           type: "elk_layout"
         }
       ```
+## develop task - progress
+ - 보안관련 자료수집
 ## develop task - wait
  - aws ec2 서버 구축하기
  - compress 서버 전송 테스트하기
