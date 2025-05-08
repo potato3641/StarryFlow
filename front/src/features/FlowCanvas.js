@@ -59,9 +59,8 @@ import { settingNodes, settingEdges } from '../utils/settingCanvas';
 import { decodeFlowFromUrlParam, encodeFlowToUrlParam, rgbastr2hex } from '../utils/utils';
 import '@xyflow/react/dist/style.css';
 import './FlowCanvas.css';
-
-const flowKey = '1q2w3e4r'
-const flowSet = '1q2w3e4r!'
+// hook
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -75,7 +74,9 @@ const rerender_key = 2;
 
 const getNodeId = () => `randomnode_${+new Date()}`;
 
-const FlowCanvas = () => {
+const FlowCanvas = ({ roomId }) => {
+  const flowKey = `${roomId || 'local'}-key`
+  const flowSet = `${roomId || 'local'}-set`
   // REDUX
   const dispatch = useDispatch();
   const existSelectedNode = useSelector((state) => state.flow.selectedNode) || false;
@@ -106,6 +107,13 @@ const FlowCanvas = () => {
   const location = useLocation();
   const [flowData, setFlowData] = useState(null);
   const { setViewport, fitView, getNodes, getEdges, getViewport, screenToFlowPosition } = useReactFlow();
+  // 소켓
+  const { sendMessage, connected } = useWebSocket(roomId, (msg) => {
+    // 메시지 타입에 따라 처리
+    // if (msg.type === 'node_add') {
+    // 노드 추가 처리
+    // }
+  });
 
   /**
    * 간선이 되지 않은 connect 과정의 선 스타일
@@ -171,25 +179,32 @@ const FlowCanvas = () => {
   // 최초 혹은 재접속시 로컬에 등록된 데이터 가져오기
   useEffect(() => {
     // local data loading
-    const flow = JSON.parse(localStorage.getItem(flowKey));
-    if (flow) {
-      const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
-      setLocalNodes(flow.nodes || []);
-      setLocalEdges(flow.edges || []);
-      setViewport({ x, y, zoom });
-    }
-    const settings = JSON.parse(localStorage.getItem(flowSet));
-    if (settings) {
-      dispatch(setDefaultNodeValue(settings.defaultNodeValue));
-      dispatch(setDefaultNodeColor(settings.defaultNodeColor));
-      dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
-      dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
-      dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
-      dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
-      dispatch(setMapFlag(settings.mapFlag));
-      dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
-      dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
-      dispatch(setTurboFlag(settings.turboFlag));
+    if (roomId === 'local') {
+      const flow = JSON.parse(localStorage.getItem(flowKey));
+      if (flow) {
+        const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
+        setLocalNodes(flow.nodes || []);
+        setLocalEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+      const settings = JSON.parse(localStorage.getItem(flowSet));
+      if (settings) {
+        dispatch(setDefaultNodeValue(settings.defaultNodeValue));
+        dispatch(setDefaultNodeColor(settings.defaultNodeColor));
+        dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
+        dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
+        dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
+        dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
+        dispatch(setMapFlag(settings.mapFlag));
+        dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
+        dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
+        dispatch(setTurboFlag(settings.turboFlag));
+      }
+    } else {
+      const { x, y, zoom } = { x: 0, y: 0, zoom: 1 };
+      setLocalNodes([]) // 가져와야함 서버에서
+      setLocalEdges([]) // 가져와야함 서버에서
+      setViewport({ x, y, zoom }) // 가져와야함 서버에서
     }
     // eslint-disable-next-line
   }, [])
@@ -202,12 +217,22 @@ const FlowCanvas = () => {
           ...node,
           data: {
             ...node.data,
-            label,
+            label: label,
             fontSize: fontSize,
           },
         } : node
       );
       setLocalNodes(updateNodes);
+      if (connected) {
+        sendMessage({
+          type: "node_update",
+          payload: {
+            id: id,
+            label: label,
+            fontSize: fontSize,
+          }
+        });
+      }
       dispatch(clearsLabel())
       dispatch(clearsFontSize())
       dispatch(clearSelectedNode())
@@ -319,10 +344,19 @@ const FlowCanvas = () => {
           })),
         );
 
+        if (connected) {
+          sendMessage({
+            type: "node_delete",
+            payload: {
+              id: node.id,
+            }
+          });
+        }
+
         return [...remainingEdges, ...createdEdges];
       }, edges),
     );
-  }, [dispatch, setLocalEdges, nodes, edges, turboFlag, defaultEdgeColor]);
+  }, [dispatch, setLocalEdges, nodes, edges, turboFlag, defaultEdgeColor, connected, sendMessage]);
 
   /**
    * 노드 클릭 이후 동작 : 
@@ -367,8 +401,20 @@ const FlowCanvas = () => {
       },
     };
     setLocalNodes([...nodes, newNode]);
+    if (connected) {
+      sendMessage({
+        type: "node_add",
+        payload: {
+          id: id,
+          position: {
+            x: x,
+            y: y,
+          },
+        }
+      });
+    }
     setPrevNodeId(id);
-  }, [setLocalNodes, nodes, defaultNodeValue, getNodes, screenToFlowPosition, prevNodeId]);
+  }, [setLocalNodes, nodes, defaultNodeValue, getNodes, screenToFlowPosition, prevNodeId, connected, sendMessage]);
 
   /**
    * settings에서 설정한 값 반환
@@ -409,7 +455,7 @@ const FlowCanvas = () => {
       const settings = flowSettings();
       localStorage.setItem(flowSet, JSON.stringify(settings))
     }
-  }, [rfInstance, flowSettings])
+  }, [rfInstance, flowSettings, flowKey, flowSet])
 
   /**
    * [Dial] 로컬 스토리지에 저장된 flow를 등록
@@ -438,7 +484,7 @@ const FlowCanvas = () => {
       }
     };
     restoreFlow();
-  }, [dispatch, setLocalNodes, setLocalEdges, setViewport])
+  }, [dispatch, setLocalNodes, setLocalEdges, setViewport, flowKey, flowSet])
 
   /**
      * [Dial] FitView를 실행하는 함수
@@ -455,11 +501,17 @@ const FlowCanvas = () => {
     const { nodes: newNodes, edges: newEdges } = await layoutWithElk(targetNodes, targetEdges, sortDirectionFlag ? 'DOWN' : 'RIGHT', algorithm);
     setLocalNodes(newNodes);
     setLocalEdges(newEdges);
+    if (connected) {
+      sendMessage({
+        type: "elk_layout",
+        payload: {},
+      });
+    }
     if (autoFitViewFlag)
       setTimeout(() => {
         fitView({ padding: 0.2 }); // dependency 문제로 직접 실행
       }, 50);
-  }, [setLocalNodes, setLocalEdges, nodes, edges, fitView, sortDirectionFlag, autoFitViewFlag]);
+  }, [setLocalNodes, setLocalEdges, nodes, edges, fitView, sortDirectionFlag, autoFitViewFlag, connected, sendMessage]);
 
   /**
    * settings에 진입하는 애니메이션을 위한 함수 :
@@ -580,11 +632,45 @@ const FlowCanvas = () => {
       });
   }, [rfInstance, flowSettings])
 
+  /**
+   * [Dial] 현재 flow의 모든 데이터 제거
+   */
   const onReset = useCallback(() => {
     setLocalEdges([]);
     setLocalNodes([]);
     dispatch(clearSelectedNode());
   }, [dispatch, setLocalEdges, setLocalNodes])
+
+  /**
+   * [socket] node move event handler
+   */
+  const onNodeDragStop = useCallback((e, node) => {
+    if (connected) {
+      sendMessage({
+        type: "node_move",
+        payload: {
+          id: node.id,
+          position: node.position,
+        }
+      });
+    }
+  }, [connected, sendMessage])
+
+  /**
+   * [socket] edge delete event handler
+   */
+  const onEdgesDelete = useCallback((deletedEdges) => {
+    if (connected) {
+      deletedEdges.forEach((edge) => {
+        sendMessage({
+          type: "edge_delete",
+          payload: {
+            id: edge.id,
+          }
+        });
+      });
+    }
+  }, [connected, sendMessage])
 
   return (
     <div className={`wrapper ${turboFlag ? 'turbo' : ''}`}>
@@ -608,6 +694,8 @@ const FlowCanvas = () => {
         onInit={setRfInstance} // ref for save/restore
         selectNodesOnDrag={false} // 드래그 시 select되는 기능 false
         deleteKeyCode={['Delete', 'Backspace']} // 삭제 키 동작 설정
+        onNodeDragStop={onNodeDragStop} // [socket] 노드 drop시 동작
+        onEdgesDelete={onEdgesDelete} // [socket] 엣지 delete시 동작
         fitView
       >
         {!(setModeFlag && !(id === 'value' || id === 'nodecolor' || id === 'edgecolor')) && existSelectedNode && (<NodePanel />)}

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MapPage from './pages/MapPage';
-import MainPage from './pages/MainPage';
+import EntryPage from './pages/EntryPage';
 
 function App() {
   useEffect(() => { // 우클방지
@@ -12,9 +12,9 @@ function App() {
   return (
     <Router basename={process.env.PUBLIC_URL}>
       <Routes>
-        <Route path="/" element={<Navigate to="/main" replace />} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/main" element={<MainPage />} />
+        <Route path="/" element={<Navigate to="/entry" replace />} />
+        <Route path="/map/:roomId" element={<MapPage />} />
+        <Route path="/entry" element={<EntryPage />} />
       </Routes>
     </Router >
   );
