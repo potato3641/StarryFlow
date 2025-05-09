@@ -5,6 +5,7 @@ from collections import defaultdict, deque
 import json
 import time
 import logging
+import asyncio
 
 ALLOWED_TYPES = {
     "node_move",
@@ -12,7 +13,8 @@ ALLOWED_TYPES = {
     "node_add",
     "node_delete",
     "edge_delete",
-    "elk_layout"
+    "elk_layout",
+    "edge_add",
 }
 
 MAX_CONNECTIONS_PER_IP = 100 # 기존 3 / 테스트용 100
@@ -26,7 +28,8 @@ message_timestamps = defaultdict(lambda: deque())
 ip_violations = defaultdict(int)  # IP별 위반 횟수
 banned_ips = load_ban_list()
 connection_logs = []
-
+room_hosts = {}
+room_logs = defaultdict(list)
 app = FastAPI()
 
 app.add_middleware(
@@ -48,6 +51,8 @@ ADMIN_TOKEN = "secret_admin_token"
 class ConnectionManager:
     def __init__(self):
         self.active_rooms: dict[str, list[WebSocket]] = {}
+        self.hosts: dict[str, WebSocket] = {}
+        self.room_data: dict[str, str] = {}
 
     async def connect(self, room_id: str, websocket: WebSocket):
         ip = websocket.client.host
@@ -64,8 +69,13 @@ class ConnectionManager:
         
         await websocket.accept()
         ip_connection_counts[ip] += 1
+        if room_id not in self.active_rooms:
+            self.hosts[room_id] = websocket
         self.active_rooms.setdefault(room_id, []).append(websocket)
         logging.info(f"[CONNECT] IP {ip} joined room {room_id}")
+        
+        if room_id in self.room_data and websocket != self.hosts[room_id]:
+            await websocket.send_text(self.room_data[room_id])
         return True
 
     def disconnect(self, room_id: str, websocket: WebSocket):
@@ -75,15 +85,28 @@ class ConnectionManager:
             del ip_connection_counts[ip]
         if room_id in self.active_rooms and websocket in self.active_rooms[room_id]:
             self.active_rooms[room_id].remove(websocket)
-            if not self.active_rooms[room_id]:
+            if self.hosts.get(room_id) == websocket:
+                for ws in list(self.active_rooms[room_id]):
+                    try:
+                        asyncio.create_task(ws.close(code=4004))  # 비동기 종료
+                    except:
+                        pass
+                del self.active_rooms[room_id]
+                del self.hosts[room_id]
+                if room_id in self.room_data:
+                    del self.room_data[room_id]
+                logging.info(f"[ROOM CLOSED] Host left room {room_id}")
+            elif not self.active_rooms[room_id]:
                 del self.active_rooms[room_id]
         if websocket in message_timestamps:
             del message_timestamps[websocket]
 
         logging.info(f"[DISCONNECT] IP {ip} left room {room_id}")
 
-    async def broadcast(self, room_id: str, message: str):
+    async def broadcast(self, room_id: str, message: str, sender: WebSocket = None):
         for connection in self.active_rooms.get(room_id, []):
+            if connection is sender:
+                continue
             try:
                 await connection.send_text(message)
             except:
@@ -94,19 +117,28 @@ manager = ConnectionManager()
 @app.websocket("/ws/{room_id}")
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     ip = websocket.client.host
-    print(f"[CONNECT TRY] {ip} to room {room_id}")
     
     connected = await manager.connect(room_id, websocket)
     if not connected:
-        print(f"[MANAGER REJECTED] {ip} connection to room {room_id}")
         return
     
-    print(f"[CONNECTION OPEN] {ip} joined room {room_id}")
+    is_host = False
+    if room_id not in room_hosts:
+        room_hosts[room_id] = websocket
+        is_host = True
+        print(f"[HOST ASSIGNED] {ip} is host of room {room_id}")
 
+    if not is_host and room_logs[room_id]:
+        try:
+            for msg in room_logs[room_id]:
+                await websocket.send_text(msg)
+            print(f"[SYNC] Sent {len(room_logs[room_id])} logs to {ip}")
+        except:
+            pass
+    
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"[RECEIVED] {data}")
 
             if len(data) > MAX_MESSAGE_SIZE:
                 logging.warning(f"[SIZE] Message too large from {ip}")
@@ -135,17 +167,51 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                     raise ValueError
                 if "type" not in msg or msg["type"] not in ALLOWED_TYPES:
                     raise ValueError("Invalid type")
-                if "payload" not in msg and msg["type"] != "elk_layout":
+                if "payload" not in msg:
                     raise ValueError("Missing payload")
             except Exception:
                 logging.warning(f"[INVALID] Malformed message from {ip}")
                 await websocket.close(code=4003)
                 break
 
-            await manager.broadcast(room_id, data)
+            if is_host:
+                appendFlag = True
+                tempData = json.loads(data)
+                if (tempData["type"] == "node_delete"):
+                    temp_id = tempData["payload"]["id"]
+                    delete_target = {"node_add", "node_update", "node_move"}
+                    basket = [
+                        idx for idx, log in enumerate(room_logs[room_id])
+                        if (x := json.loads(log))["type"] in delete_target and x["payload"]["id"] == temp_id
+                    ]
+                    if basket:
+                        appendFlag = False
+                        for idx in reversed(basket):
+                            del room_logs[room_id][idx]
+                if (tempData["type"] == "edge_delete"):
+                    temp_id = tempData["payload"]["id"]
+                    for idx, log in enumerate(room_logs[room_id]):
+                        x = json.loads(log)
+                        if x["type"] == "edge_add" and x["payload"]["id"] == temp_id:
+                            appendFlag = False
+                            del room_logs[room_id][idx]
+                            break
+                if appendFlag:
+                    room_logs[room_id].append(data)
+
+            await manager.broadcast(room_id, data, sender=websocket)
 
     except WebSocketDisconnect:
         manager.disconnect(room_id, websocket)
+        
+        if is_host:
+            print(f"[HOST LEFT] Closing all connections in room {room_id}")
+            for ws in manager.active_rooms.get(room_id, []):
+                if ws != websocket:
+                    asyncio.create_task(ws.close(code=4004))
+
+            room_hosts.pop(room_id, None)
+            room_logs.pop(room_id, None)
 
 
 def is_admin(token: str):
