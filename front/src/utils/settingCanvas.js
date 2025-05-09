@@ -30,7 +30,7 @@ export const settingNodes = (defaultvalue, defaultnodecolor, defaultedgecolor) =
 
 export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycleflag, blurflag, turboflag) => [
   {
-    id: 'Notice->A',
+    id: 'xy-edge__Notice-A',
     source: 'Notice',
     target: 'A',
     style: {
@@ -41,7 +41,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'Notice->B',
+    id: 'xy-edge__Notice-B',
     source: 'Notice',
     target: 'B',
     style: {
@@ -52,7 +52,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'Notice->C',
+    id: 'xy-edge__Notice-C',
     source: 'Notice',
     target: 'C',
     style: {
@@ -63,7 +63,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'Notice->6',
+    id: 'xy-edge__Notice-6',
     source: 'Notice',
     target: '6',
     style: {
@@ -74,7 +74,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'Notice->7',
+    id: 'xy-edge__Notice-7',
     source: 'Notice',
     target: '7',
     style: {
@@ -85,7 +85,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'Notice->10',
+    id: 'xy-edge__Notice-10',
     source: 'Notice',
     target: '10',
     style: {
@@ -96,7 +96,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'A->1',
+    id: 'xy-edge__A-1',
     source: 'A',
     target: '1',
     style: {
@@ -107,7 +107,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'A->2',
+    id: 'xy-edge__A-2',
     source: 'A',
     target: '2',
     style: {
@@ -118,7 +118,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'A->3',
+    id: 'xy-edge__A-3',
     source: 'A',
     target: '3',
     style: {
@@ -129,7 +129,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'A->4',
+    id: 'xy-edge__A-4',
     source: 'A',
     target: '4',
     style: {
@@ -140,7 +140,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'B->left',
+    id: 'xy-edge__B-left',
     source: 'B',
     target: 'left',
     style: {
@@ -151,7 +151,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'B->center',
+    id: 'xy-edge__B-center',
     source: 'B',
     target: 'center',
     style: {
@@ -162,7 +162,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'B->right',
+    id: 'xy-edge__B-right',
     source: 'B',
     target: 'right',
     style: {
@@ -173,7 +173,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'B->5',
+    id: 'xy-edge__B-5',
     source: 'B',
     target: '5',
     style: {
@@ -184,7 +184,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'C->lr',
+    id: 'xy-edge__C-lr',
     source: 'C',
     target: 'lr',
     style: {
@@ -195,7 +195,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'C->tb',
+    id: 'xy-edge__C-tb',
     source: 'C',
     target: 'tb',
     style: {
@@ -206,7 +206,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: 'C->8',
+    id: 'xy-edge__C-8',
     source: 'C',
     target: '8',
     style: {
@@ -217,7 +217,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: `1->${mapflag ? 'on' : 'off'}`,
+    id: `xy-edge__1-${mapflag ? 'on' : 'off'}`,
     source: '1',
     target: `${mapflag ? 'on' : 'off'}`,
     style: {
@@ -226,7 +226,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: `2->${fitflag ? 'on' : 'off'}`,
+    id: `xy-edge__2-${fitflag ? 'on' : 'off'}`,
     source: '2',
     target: `${fitflag ? 'on' : 'off'}`,
     style: {
@@ -235,7 +235,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: `3->${cycleflag ? 'on' : 'off'}`,
+    id: `xy-edge__3-${cycleflag ? 'on' : 'off'}`,
     source: '3',
     target: `${cycleflag ? 'on' : 'off'}`,
     style: {
@@ -244,7 +244,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: `4->${blurflag ? 'on' : 'off'}`,
+    id: `xy-edge__4-${blurflag ? 'on' : 'off'}`,
     source: '4',
     target: `${blurflag ? 'on' : 'off'}`,
     style: {
@@ -253,7 +253,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: `5->${defaultalign}`,
+    id: `xy-edge__5-${defaultalign}`,
     source: '5',
     target: `${defaultalign}`,
     style: {
@@ -262,7 +262,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: '6->value',
+    id: 'xy-edge__6-value',
     source: '6',
     target: 'value',
     style: {
@@ -272,7 +272,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: '7->nodecolor',
+    id: 'xy-edge__7-nodecolor',
     source: '7',
     target: 'nodecolor',
     style: {
@@ -282,7 +282,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     deletable: false,
   },
   {
-    id: `8->${directionflag ? 'tb' : 'lr'}`,
+    id: `xy-edge__8-${directionflag ? 'tb' : 'lr'}`,
     source: '8',
     target: `${directionflag ? 'tb' : 'lr'}`,
     style: {
@@ -291,7 +291,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: `9->${turboflag ? 'on' : 'off'}`,
+    id: `xy-edge__9-${turboflag ? 'on' : 'off'}`,
     source: '9',
     target: `${turboflag ? 'on' : 'off'}`,
     style: {
@@ -300,7 +300,7 @@ export const settingEdges = (defaultalign, directionflag, fitflag, mapflag, cycl
     },
   },
   {
-    id: '10->edgecolor',
+    id: 'xy-edge__10-edgecolor',
     source: '10',
     target: 'edgecolor',
     style: {

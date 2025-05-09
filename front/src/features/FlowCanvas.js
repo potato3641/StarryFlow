@@ -1,5 +1,5 @@
 // react
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 // redux
 import { useDispatch, useSelector } from 'react-redux';
@@ -103,16 +103,90 @@ const FlowCanvas = ({ roomId }) => {
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
   const [edges, setLocalEdges, onEdgesChange] = useEdgesState([]);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
   const [rfInstance, setRfInstance] = useState(null);
   const location = useLocation();
   const [flowData, setFlowData] = useState(null);
   const { setViewport, fitView, getNodes, getEdges, getViewport, screenToFlowPosition } = useReactFlow();
-  // 소켓
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
+
+  // SOCKET
   const { sendMessage, connected } = useWebSocket(roomId, (msg) => {
     // 메시지 타입에 따라 처리
-    // if (msg.type === 'node_add') {
-    // 노드 추가 처리
-    // }
+    if (msg.type === 'node_add') {
+      const newNode = {
+        id: msg.payload.id,
+        type: 'custom',
+        data: { label: `${defaultNodeValue}` },
+        position: msg.payload.position,
+      }
+      setLocalNodes((prevNodes) => [...prevNodes, newNode]);
+    } else if (msg.type === "node_move") {
+      setLocalNodes((prevNodes) => {
+        const moveNodes = prevNodes.map((node) =>
+          node.id === msg.payload.id ? {
+            ...node,
+            position: msg.payload.position,
+          } : node
+        );
+        return moveNodes
+      })
+    } else if (msg.type === "node_update") {
+      setLocalNodes((prevNodes) => {
+        const updateNodes = prevNodes.map((node) =>
+          node.id === msg.payload.id ? {
+            ...node,
+            data: {
+              ...node.data,
+              label: msg.payload.label,
+              fontSize: msg.payload.fontSize,
+            },
+          } : node
+        );
+        return updateNodes
+      })
+    } else if (msg.type === "node_delete") {
+      const targetNode = nodes.find(node => node.id === msg.payload.id);
+      if (targetNode)
+        onNodesDelete([targetNode]);
+      setLocalNodes((prev) => prev.filter(node => node.id !== msg.payload.id));
+    } else if (msg.type === "edge_add") {
+      const newEdge = {
+        id: msg.payload.id,
+        source: msg.payload.source,
+        target: msg.payload.target,
+        style: {
+          ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+          strokeWidth: 3
+        }
+      }
+      setLocalEdges((prevEdges) => [...prevEdges, newEdge]);
+    } else if (msg.type === "edge_delete") {
+      setLocalEdges((prevEdges) => {
+        const remainEdges = prevEdges.filter((edge) =>
+          edge.id !== msg.payload.id
+        );
+        return remainEdges
+      });
+    } else if (msg.type === "elk_layout") {
+      (async () => {
+        const { nodes: newNodes, edges: newEdges } = await layoutWithElk([...nodesRef.current], [...edgesRef.current], sortDirectionFlag ? 'DOWN' : 'RIGHT');
+        setLocalNodes(() => [...newNodes]);
+        setLocalEdges(() => [...newEdges]);
+        if (autoFitViewFlag)
+          setTimeout(() => {
+            fitView({ padding: 0.2 });
+          }, 50);
+      })();
+    }
   });
 
   /**
@@ -279,6 +353,16 @@ const FlowCanvas = ({ roomId }) => {
    */
   const onConnect = useCallback((params) => {
     setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 3 } }, eds))
+    if (connected) {
+      sendMessage({
+        type: "edge_add",
+        payload: {
+          id: `xy-edge__${params.source}-${params.target}`,
+          source: params.source,
+          target: params.target
+        }
+      });
+    }
     if (setModeFlag)
       switch (params.source) {
         case "1": // 1 minimap on / off flag ->  mapFlag
@@ -314,7 +398,7 @@ const FlowCanvas = ({ roomId }) => {
         default:
           console.error("Unauthorized Access")
       }
-  }, [dispatch, setLocalEdges, setModeFlag]);
+  }, [dispatch, setLocalEdges, setModeFlag, connected, sendMessage]);
 
   /**
    * 노드 삭제 이후 동작 : 
@@ -334,7 +418,7 @@ const FlowCanvas = ({ roomId }) => {
 
         const createdEdges = incomers.flatMap(({ id: source }) =>
           outgoers.map(({ id: target }) => ({
-            id: `${source}->${target}`,
+            id: `xy-edge__${source}-${target}`,
             source,
             target,
             style: {
@@ -343,6 +427,19 @@ const FlowCanvas = ({ roomId }) => {
             },
           })),
         );
+
+        if (connected) {
+          createdEdges.forEach((edge) => {
+            sendMessage({
+              type: "edge_add",
+              payload: {
+                id: `xy-edge__${edge.source}-${edge.target}`,
+                source: edge.source,
+                target: edge.target,
+              }
+            });
+          });
+        }
 
         if (connected) {
           sendMessage({
