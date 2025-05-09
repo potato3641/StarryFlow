@@ -167,6 +167,17 @@
           type: "elk_layout"
         }
       ```
+     - 엣지 생성 - "edge_add"
+      ```JSON
+        {
+          type: "edge_add"
+          payload: {
+            id,
+            source,
+            target,
+          }
+        }
+      ```
  - 보안관련 자료수집
  - 제작중인 기능
    - ~~노드 Position (x, y) - "node_move"~~ -> 완료
@@ -175,10 +186,18 @@
    - ~~노드 삭제 - "node_delete"~~ -> 완료
    - ~~엣지 삭제 - "edge_delete"~~ -> 완료
    - ~~ELK 실행 - "elk_layout"~~ -> 완료
+   - ~~엣지 생성 - "edge_add"~~ -> 완료
+   - ~~노드 삭제 / 엣지 삭제 시 연결부분 로그 서버에서 삭제처리하기(로그최적화)~~
  - ~~canvas 사설방과 로컬방 분리하기~~ -> 완료
+ - ~~서버 - 클라이언트B로 데이터 동기화하는 부분~~ -> 완료
+ - 현재 클라이언트 - 서버 소켓 연결 완료
+ - ~~클라이언트에서 동기화된 데이터를 처리하는 부분이 없다~~ -> 완료
 ## develop task - progress
- - 현재 클라이언트A - 서버 소켓 연결 완료
- - 서버 - 클라이언트B로 데이터 동기화하는 부분이 없다.
+ - go set부분이 문제다. settings할 때 task를 멈추게해야하나?
+   - stop을 넣어서 2초뒤에 settings에 진입할 수 있도록 해야하나?
+   - settings에 대한 변경은 어떻게 적용할까?
 ## develop task - wait
  - aws ec2 서버 구축하기
+ - oracle cloud 정상화되면 다시 구동할생각도
  - compress 서버 전송 테스트하기
+ - redis 사용예정
