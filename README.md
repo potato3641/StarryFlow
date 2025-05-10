@@ -103,8 +103,107 @@
      - ~~compress - base64~~
      - ~~역변환기능도~~
      - ~~map 초기화기능~~
-## develop task - progress
  - 소켓관련 자료 수집
+ - 사전 규약 설정하기
+   - 필요한 기능?
+     - 노드 Position (x, y) - "node_move"
+      ```JSON
+        {
+          type: "node_move",
+          payload: {
+            id,
+            position: {
+              x,
+              y
+            }
+          }
+        }
+      ```
+     - 노드 변경 (label) - "node_update"
+      ```JSON
+        {
+          type: "node_update"
+          payload: {
+            id,
+            label,
+            fontSize
+          }
+        }
+      ```
+     - 노드 생성 - "node_add"
+      ```JSON
+        {
+          type: "node_add"
+          payload: {
+            id,
+            position: {
+              x,
+              y
+            }
+          }
+        }
+      ```
+     - 노드 삭제 - "node_delete"
+      ```JSON
+        {
+          type: "node_delete"
+          payload: {
+            id
+          }
+        }
+      ```
+     - 엣지 삭제 - "edge_delete"
+      ```JSON
+        {
+          type: "edge_delete"
+          payload: {
+            id
+          }
+        }
+      ```
+     - ELK 실행 - "elk_layout"
+      ```JSON
+        {
+          type: "elk_layout"
+        }
+      ```
+     - 엣지 생성 - "edge_add"
+      ```JSON
+        {
+          type: "edge_add"
+          payload: {
+            id,
+            source,
+            target,
+          }
+        }
+      ```
+ - 보안관련 자료수집
+ - 제작중인 기능
+   - ~~노드 Position (x, y) - "node_move"~~ -> 완료
+   - ~~노드 변경 (label) - "node_update"~~ -> 완료
+   - ~~노드 생성 - "node_add"~~ -> 완료
+   - ~~노드 삭제 - "node_delete"~~ -> 완료
+   - ~~엣지 삭제 - "edge_delete"~~ -> 완료
+   - ~~ELK 실행 - "elk_layout"~~ -> 완료
+   - ~~엣지 생성 - "edge_add"~~ -> 완료
+   - ~~노드 삭제 / 엣지 삭제 시 연결부분 로그 서버에서 삭제처리하기(로그최적화)~~
+ - ~~canvas 사설방과 로컬방 분리하기~~ -> 완료
+ - ~~서버 - 클라이언트B로 데이터 동기화하는 부분~~ -> 완료
+ - 현재 클라이언트 - 서버 소켓 연결 완료
+ - ~~클라이언트에서 동기화된 데이터를 처리하는 부분이 없다~~ -> 완료
+ - ~~일단 로그에서 move는 최종상태만 저장할것~~ -> 완료
+ - go set부분이 문제다. settings할 때 task를 멈추게해야하나?
+   - ~~stop을 넣어서 2초뒤에 settings에 진입할 수 있도록 해야하나?~~
+   - ~~settings에 대한 변경은 어떻게 적용할까?~~
+   - ~~zoomout이 고집인가?~~
+   - ~~그럼 어떻게바꿀것인가?~~
+   - broadcast 메세지를 modeflag로 분기해서 tempRef에 처리
+## develop task - progress
+ - go set 변경점 이후 테스트하기
+ - go canvas 변겅점 이후 테스트하기
 ## develop task - wait
  - aws ec2 서버 구축하기
+ - oracle cloud 정상화되면 다시 구동할생각도
  - compress 서버 전송 테스트하기
+ - redis 사용예정
