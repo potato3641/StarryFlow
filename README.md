@@ -192,10 +192,16 @@
  - ~~서버 - 클라이언트B로 데이터 동기화하는 부분~~ -> 완료
  - 현재 클라이언트 - 서버 소켓 연결 완료
  - ~~클라이언트에서 동기화된 데이터를 처리하는 부분이 없다~~ -> 완료
-## develop task - progress
+ - ~~일단 로그에서 move는 최종상태만 저장할것~~ -> 완료
  - go set부분이 문제다. settings할 때 task를 멈추게해야하나?
-   - stop을 넣어서 2초뒤에 settings에 진입할 수 있도록 해야하나?
-   - settings에 대한 변경은 어떻게 적용할까?
+   - ~~stop을 넣어서 2초뒤에 settings에 진입할 수 있도록 해야하나?~~
+   - ~~settings에 대한 변경은 어떻게 적용할까?~~
+   - ~~zoomout이 고집인가?~~
+   - ~~그럼 어떻게바꿀것인가?~~
+   - broadcast 메세지를 modeflag로 분기해서 tempRef에 처리
+## develop task - progress
+ - go set 변경점 이후 테스트하기
+ - go canvas 변겅점 이후 테스트하기
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
