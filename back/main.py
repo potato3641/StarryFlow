@@ -175,27 +175,8 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 break
 
             if is_host:
-                appendFlag = True
                 tempData = json.loads(data)
-                if (tempData["type"] == "node_delete"):
-                    temp_id = tempData["payload"]["id"]
-                    delete_target = {"node_add", "node_update", "node_move"}
-                    basket = [
-                        idx for idx, log in enumerate(room_logs[room_id])
-                        if (x := json.loads(log))["type"] in delete_target and x["payload"]["id"] == temp_id
-                    ]
-                    if basket:
-                        appendFlag = False
-                        for idx in reversed(basket):
-                            del room_logs[room_id][idx]
-                if (tempData["type"] == "edge_delete"):
-                    temp_id = tempData["payload"]["id"]
-                    for idx, log in enumerate(room_logs[room_id]):
-                        x = json.loads(log)
-                        if x["type"] == "edge_add" and x["payload"]["id"] == temp_id:
-                            appendFlag = False
-                            del room_logs[room_id][idx]
-                            break
+                appendFlag = not log_optimizer(tempData, room_id)
                 if appendFlag:
                     room_logs[room_id].append(data)
 
@@ -213,6 +194,39 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             room_hosts.pop(room_id, None)
             room_logs.pop(room_id, None)
 
+def log_optimizer(tempData: dict, room_id: str) -> bool:
+    
+    data_type = tempData["type"]
+    payload_id = tempData["payload"]["id"]
+    delete_flag = False
+
+    if data_type == "node_delete":
+        delete_target = {"node_add", "node_update", "node_move"}
+        basket = [
+            idx for idx, log in enumerate(room_logs[room_id])
+            if (x := json.loads(log))["type"] in delete_target and x["payload"]["id"] == payload_id
+        ]
+        if basket:
+            for idx in reversed(basket):
+                del room_logs[room_id][idx]
+            delete_flag = True
+
+    elif data_type == "edge_delete":
+        for idx, log in enumerate(room_logs[room_id]):
+            x = json.loads(log)
+            if x["type"] == "edge_add" and x["payload"]["id"] == payload_id:
+                del room_logs[room_id][idx]
+                delete_flag = True
+                break
+
+    elif data_type == "node_move":
+        for idx, log in enumerate(room_logs[room_id]):
+            x = json.loads(log)
+            if x["type"] == "node_move" and x["payload"]["id"] == payload_id:
+                del room_logs[room_id][idx]
+                break
+
+    return delete_flag
 
 def is_admin(token: str):
     return token == ADMIN_TOKEN
