@@ -199,9 +199,29 @@
    - ~~zoomout이 고집인가?~~
    - ~~그럼 어떻게바꿀것인가?~~
    - broadcast 메세지를 modeflag로 분기해서 tempRef에 처리
+ - ~~go set 변경점 이후 테스트하기~~
+ - ~~go canvas 변겅점 이후 테스트하기~~
+ 
+ - 플래그의 동기화가 되지 않는 문제 발생
+   - 값이 정해지기전에 mount될때 최초값이 들어가서 문제
+   - 그런데 최초값이 변경이 안됨
+   - 핸들을 무명함수에서 분리하여 handleMessage로
+   - 함수를 useCallback으로 변경
+   - onNodesDelete는 한참뒤에 정의하는데 해당 함수에서도 connect를 사용해서 상호참조되어 warning 발생
+   - 상호참조대신 직접참조하니까 react hook rule을 위반했다
+   - 그렇다고 onNodesDelete를 위로 올리면 안된다
+   - function을 쓰면 된다는데 useCallback함수는 function으로 정의할 수 없다
+   - useRef와 useEffect로 변경된 onNodesDelete를 갖고있기
+   - setModeFlag에도 문제 발생
+   - 분명 useCallback으로 setModeFlag 변경되면 바꾸도록 설정했는데 안바뀐다
+   - setModeFlag를 useCallback 내부에서 정의할 수 없음
+   - onNodesDelete와 마찬가지로 useRef, useEffect로 변경된 setModeFlag를 갖고있기
+   - 이외 비슷한 문제 동일처리
+   - 이를 해결하고보니 zoomOut이 비동기 이후 처리하는 함수라 zoomOut시간이 고스란히 동기화되지않는시간임
+ - ~~zoomOut버려?~~ -> 버림
 ## develop task - progress
- - go set 변경점 이후 테스트하기
- - go canvas 변겅점 이후 테스트하기
+ - 동기화를 서버만 해놓고 react에서 안받았다!
+   - 로그 한번에 받을때 resizerobserver 루프초과 이슈 있음
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
