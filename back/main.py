@@ -197,10 +197,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 def log_optimizer(tempData: dict, room_id: str) -> bool:
     
     data_type = tempData["type"]
-    payload_id = tempData["payload"]["id"]
     delete_flag = False
 
     if data_type == "node_delete":
+        payload_id = tempData["payload"]["id"]
         delete_target = {"node_add", "node_update", "node_move"}
         basket = [
             idx for idx, log in enumerate(room_logs[room_id])
@@ -212,6 +212,7 @@ def log_optimizer(tempData: dict, room_id: str) -> bool:
             delete_flag = True
 
     elif data_type == "edge_delete":
+        payload_id = tempData["payload"]["id"]
         for idx, log in enumerate(room_logs[room_id]):
             x = json.loads(log)
             if x["type"] == "edge_add" and x["payload"]["id"] == payload_id:
@@ -220,6 +221,7 @@ def log_optimizer(tempData: dict, room_id: str) -> bool:
                 break
 
     elif data_type == "node_move":
+        payload_id = tempData["payload"]["id"]
         for idx, log in enumerate(room_logs[room_id]):
             x = json.loads(log)
             if x["type"] == "node_move" and x["payload"]["id"] == payload_id:
