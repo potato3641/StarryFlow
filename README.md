@@ -232,9 +232,16 @@
    - 로그 한번에 받을때 resizerobserver 루프초과 이슈 있음
    - ~~해결방안 : 사전 규약에 batch_update 신설~~ -> 완료
      - 서버 설정 완료
-     - onNodesDelete는 그만 놔주고 직접 만들어야겠다
+     - ~~onNodesDelete는 그만 놔주고 직접 만들어야겠다~~ -> 안놔주고 onNodesDelete를 재사용성 있게 수정함
 ## develop task - progress
  - 2차 사용성테스트
+   - ~~connect가 끊겼을 때 알림이 콘솔에서밖에 없음~~
+   - ~~socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)~~
+   - ~~elk_layout이 await이므로 async()했을때 바로 적용이 되지 않는 문제~~
+   - ~~node delete시 null.find하는 문제(정확히는 delete했을 때 broadcast시, null이 되는 문제)~~
+   - ~~guest 변화가 서버 host기록에 저장되지않음. (host작성 -> guest작성 -> 새로고침 -> guest는 작성이전상태)~~
+   - ~~host여부를 보여줬으면 좋겠는데~~ -> dial 색상으로 완료
+   - next
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
