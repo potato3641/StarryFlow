@@ -127,10 +127,10 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         room_hosts[room_id] = websocket
         is_host = True
         print(f"[HOST ASSIGNED] {ip} is host of room {room_id}")
+        await websocket.send_text(json.dumps({'type': 'you_are_host', 'roomId': room_id}))
 
     if not is_host and room_logs[room_id]:
         try:
-            print('checker')
             payload = [json.loads(msg) if isinstance(msg, str) else msg for msg in room_logs[room_id]]
             batch_message = {
                 "type": "batch_update",
@@ -179,11 +179,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 await websocket.close(code=4003)
                 break
 
-            if is_host:
-                tempData = json.loads(data)
-                appendFlag = not log_optimizer(tempData, room_id)
-                if appendFlag:
-                    room_logs[room_id].append(data)
+            
+            tempData = json.loads(data)
+            appendFlag = not log_optimizer(tempData, room_id)
+            if appendFlag:
+                room_logs[room_id].append(data)
 
             await manager.broadcast(room_id, data, sender=websocket)
 
