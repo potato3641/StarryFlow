@@ -130,8 +130,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
 
     if not is_host and room_logs[room_id]:
         try:
-            for msg in room_logs[room_id]:
-                await websocket.send_text(msg)
+            print('checker')
+            payload = [json.loads(msg) if isinstance(msg, str) else msg for msg in room_logs[room_id]]
+            batch_message = {
+                "type": "batch_update",
+                "payload": payload,
+            }
+            await websocket.send_text(json.dumps(batch_message))
             print(f"[SYNC] Sent {len(room_logs[room_id])} logs to {ip}")
         except:
             pass
