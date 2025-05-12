@@ -149,7 +149,7 @@ const FlowCanvas = ({ roomId }) => {
   /**
    * 소켓 통신에서 수신한 메세지 타입에 따라 처리
    */
-  const handleMessage = useCallback((msg) => {
+  const handleMessage = useCallback((msg, recursionFlag = false, recursionNodes = [], recursionEdges = []) => {
     //동기화되지않는레퍼런스처리
     const currentSetModeFlag = setModeFlagRef?.current;
     const fitViewFlag = autoFitViewFlagRef?.current;
@@ -158,16 +158,35 @@ const FlowCanvas = ({ roomId }) => {
     const defaultNodeVal = defaultNodeValueRef?.current;
     const defaultEdgeClr = defaultEdgeColorRef?.current;
     const temporaryFlow = tempRefRef;
-    if (msg.type === 'node_add') {
+    if (msg.type === 'batch_update') {
+      const prevNodes = nodesRef?.current;
+      const prevEdges = edgesRef?.current;
+      const { nextNodes, nextEdges } = msg.payload.reduce(
+        ({ nextNodes, nextEdges }, subMsg) => {
+          const { recursionNodes: updatedNodes, recursionEdges: updatedEdges } = handleMessage(subMsg, true, nextNodes, nextEdges);
+          return {
+            nextNodes: updatedNodes,
+            nextEdges: updatedEdges,
+          };
+        },
+        {
+          nextNodes: prevNodes,
+          nextEdges: prevEdges,
+        }
+      )
+      setLocalNodes(nextNodes);
+      setLocalEdges(nextEdges);
+    } else if (msg.type === 'node_add') {
       const newNode = {
         id: msg.payload.id,
         type: 'custom',
         data: { label: `${defaultNodeVal}` },
         position: msg.payload.position,
       }
-      if (currentSetModeFlag) {
+      if (currentSetModeFlag)
         temporaryFlow.current.nodes = [...temporaryFlow.current.nodes, newNode];
-      }
+      else if (recursionFlag)
+        return { recursionNodes: [...recursionNodes, newNode], recursionEdges: recursionEdges }
       else
         setLocalNodes((prevNodes) => [...prevNodes, newNode]);
     } else if (msg.type === "node_move") {
@@ -180,6 +199,8 @@ const FlowCanvas = ({ roomId }) => {
         );
       if (currentSetModeFlag)
         temporaryFlow.current.nodes = moveNodes(temporaryFlow.current.nodes, msg)
+      else if (recursionFlag)
+        return { recursionNodes: moveNodes(recursionNodes, msg), recursionEdges }
       else
         setLocalNodes((prevNodes) => moveNodes(prevNodes, msg));
     } else if (msg.type === "node_update") {
@@ -196,34 +217,22 @@ const FlowCanvas = ({ roomId }) => {
         );
       if (currentSetModeFlag)
         temporaryFlow.current.nodes = updateNodes(temporaryFlow.current.nodes, msg)
+      else if (recursionFlag)
+        return { recursionNodes: updateNodes(recursionNodes, msg), recursionEdges }
       else
         setLocalNodes((prevNodes) => updateNodes(prevNodes, msg));
     } else if (msg.type === "node_delete") { // 함수화X
       const targetNode = temporaryFlow.current.find(node => node.id === msg.payload.id);
       if (currentSetModeFlag) {
-        const tempRefNodes = temporaryFlow.current.nodes;
-        const tempRefEdges = temporaryFlow.current.edges;
-        temporaryFlow.current.edges = tempRefNodes.reduce((acc, node) => {
-          const incomers = getIncomers(node, tempRefNodes, tempRefEdges);
-          const outgoers = getOutgoers(node, tempRefNodes, tempRefEdges);
-          const connectedEdges = getConnectedEdges([node], tempRefEdges);
-          const remainingEdges = acc.filter(
-            (edge) => !connectedEdges.includes(edge),
-          );
-          const createdEdges = incomers.flatMap(({ id: source }) =>
-            outgoers.map(({ id: target }) => ({
-              id: `xy-edge__${source}-${target}`,
-              source,
-              target,
-              style: {
-                ...(themeFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeClr) }),
-                strokeWidth: 3
-              },
-            })),
-          );
-          return [...remainingEdges, ...createdEdges];
-        }, tempRefEdges)
-        temporaryFlow.current.nodes = tempRefNodes.filter(node => node.id !== msg.payload.id);
+        temporaryFlow.current.edges = onNodesDeleteRef([targetNode], temporaryFlow.current)
+        temporaryFlow.current.nodes = temporaryFlow.current.nodes.filter(node => node.id !== msg.payload.id);
+      } else if (recursionFlag) {
+        const targetRecursionNode = recursionNodes.find(node => node.id === msg.payload.id);
+        const recursionFlow = { nodes: recursionNodes, edges: recursionEdges };
+        return {
+          recursionNodes: recursionNodes.filter(node => node.id !== msg.payload.id),
+          recursionEdges: onNodesDeleteRef([targetRecursionNode], recursionFlow)
+        }
       } else {
         targetNode && onNodesDeleteRef([targetNode]);
         setLocalNodes((prev) => prev.filter(node => node.id !== msg.payload.id));
@@ -240,6 +249,8 @@ const FlowCanvas = ({ roomId }) => {
       }
       if (currentSetModeFlag)
         temporaryFlow.current.edges = [...temporaryFlow.current.edges, newEdge]
+      else if (recursionFlag)
+        return { recursionNodes, recursionEdges: [...recursionEdges, newEdge] }
       else
         setLocalEdges((prevEdges) => [...prevEdges, newEdge]);
     } else if (msg.type === "edge_delete") {
@@ -249,24 +260,34 @@ const FlowCanvas = ({ roomId }) => {
         );
       if (currentSetModeFlag)
         temporaryFlow.current.edges = remainEdges(temporaryFlow.current.edges, msg);
+      else if (recursionFlag)
+        return { recursionNodes, recursionEdges: remainEdges(recursionEdges, msg) }
       else
         setLocalEdges((prevEdges) => remainEdges(prevEdges, msg));
     } else if (msg.type === "elk_layout") {
       (async () => {
-        const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
-          [...nodesRef?.current],
-          [...edgesRef?.current],
-          sortDirFlag ? 'DOWN' : 'RIGHT');
-        if (currentSetModeFlag) {
-          temporaryFlow.current.nodes = newNodes;
-          temporaryFlow.current.edges = newEdges;
+        if (recursionFlag) {
+          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+            [...recursionNodes],
+            [...recursionEdges],
+            sortDirFlag ? 'DOWN' : 'RIGHT');
+          return { recursionNodes: newNodes, recursionEdges: newEdges }
         } else {
-          setLocalNodes(() => [...newNodes]);
-          setLocalEdges(() => [...newEdges]);
-          if (fitViewFlag)
-            setTimeout(() => {
-              fitView({ padding: 0.2 });
-            }, 50);
+          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+            [...nodesRef?.current],
+            [...edgesRef?.current],
+            sortDirFlag ? 'DOWN' : 'RIGHT');
+          if (currentSetModeFlag) {
+            temporaryFlow.current.nodes = newNodes;
+            temporaryFlow.current.edges = newEdges;
+          } else {
+            setLocalNodes(() => [...newNodes]);
+            setLocalEdges(() => [...newEdges]);
+            if (fitViewFlag)
+              setTimeout(() => {
+                fitView({ padding: 0.2 });
+              }, 50);
+          }
         }
       })();
     }
@@ -489,55 +510,59 @@ const FlowCanvas = ({ roomId }) => {
    * 노드 삭제 이후 동작 : 
    * 삭제된 노드에 연결되었던 간선을 노드가 없었을 때의 연결된 간선으로 대체
    */
-  const onNodesDelete = useCallback((deleted) => {
+  const onNodesDelete = useCallback((deleted, flow = false) => {
     dispatch(clearSelectedNode());
-    setLocalEdges(
-      deleted.reduce((acc, node) => {
-        const incomers = getIncomers(node, nodes, edges);
-        const outgoers = getOutgoers(node, nodes, edges);
-        const connectedEdges = getConnectedEdges([node], edges);
+    const targetNodes = flow ? flow.nodes : nodes;
+    const targetEdges = flow ? flow.edges : edges;
+    const newEdges = deleted.reduce((acc, node) => {
+      const incomers = getIncomers(node, targetNodes, targetEdges);
+      const outgoers = getOutgoers(node, targetNodes, targetEdges);
+      const connectedEdges = getConnectedEdges([node], targetEdges);
 
-        const remainingEdges = acc.filter(
-          (edge) => !connectedEdges.includes(edge),
-        );
+      const remainingEdges = acc.filter(
+        (edge) => !connectedEdges.includes(edge),
+      );
 
-        const createdEdges = incomers.flatMap(({ id: source }) =>
-          outgoers.map(({ id: target }) => ({
-            id: `xy-edge__${source}-${target}`,
-            source,
-            target,
-            style: {
-              ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
-              strokeWidth: 3
-            },
-          })),
-        );
+      const createdEdges = incomers.flatMap(({ id: source }) =>
+        outgoers.map(({ id: target }) => ({
+          id: `xy-edge__${source}-${target}`,
+          source,
+          target,
+          style: {
+            ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+            strokeWidth: 3
+          },
+        })),
+      );
 
-        if (connected && !setModeFlag) {
-          createdEdges.forEach((edge) => {
-            sendMessage({
-              type: "edge_add",
-              payload: {
-                id: `xy-edge__${edge.source}-${edge.target}`,
-                source: edge.source,
-                target: edge.target,
-              }
-            });
-          });
-        }
-
-        if (connected && !setModeFlag) {
+      if (connected && !setModeFlag) {
+        createdEdges.forEach((edge) => {
           sendMessage({
-            type: "node_delete",
+            type: "edge_add",
             payload: {
-              id: node.id,
+              id: `xy-edge__${edge.source}-${edge.target}`,
+              source: edge.source,
+              target: edge.target,
             }
           });
-        }
+        });
+      }
 
-        return [...remainingEdges, ...createdEdges];
-      }, edges),
-    );
+      if (connected && !setModeFlag) {
+        sendMessage({
+          type: "node_delete",
+          payload: {
+            id: node.id,
+          }
+        });
+      }
+
+      return [...remainingEdges, ...createdEdges];
+    }, targetEdges)
+    if (flow)
+      return newEdges;
+    else
+      setLocalEdges(newEdges);
   }, [dispatch, setLocalEdges, nodes, edges, turboFlag, defaultEdgeColor, connected, sendMessage, setModeFlag]);
 
   useEffect(() => {
