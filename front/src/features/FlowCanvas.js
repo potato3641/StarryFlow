@@ -103,34 +103,91 @@ const FlowCanvas = ({ roomId }) => {
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
   const [edges, setLocalEdges, onEdgesChange] = useEdgesState([]);
-  const nodesRef = useRef(nodes);
-  const edgesRef = useRef(edges);
   const [rfInstance, setRfInstance] = useState(null);
   const location = useLocation();
   const [flowData, setFlowData] = useState(null);
-  const { setViewport, fitView, getNodes, getEdges, getViewport, screenToFlowPosition } = useReactFlow();
-
-  useEffect(() => {
+  const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
+  // SOCKET
+  const [hostFlag, setHostFlag] = useState(false);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+  const onNodesDeleteRef = useRef();
+  const setModeFlagRef = useRef();
+  const tempRefRef = useRef();
+  const autoFitViewFlagRef = useRef();
+  const sortDirectionFlagRef = useRef();
+  const turboFlagRef = useRef();
+  const defaultNodeValueRef = useRef();
+  const defaultEdgeColorRef = useRef();
+  useEffect(() => { // for socket elk refenence
     nodesRef.current = nodes;
   }, [nodes]);
-
-  useEffect(() => {
+  useEffect(() => { // for socket elk refenence
     edgesRef.current = edges;
   }, [edges]);
+  useEffect(() => { // for socket ref
+    setModeFlagRef.current = setModeFlag;
+  }, [setModeFlag]);
+  useEffect(() => { // for socket ref
+    autoFitViewFlagRef.current = autoFitViewFlag;
+  }, [autoFitViewFlag]);
+  useEffect(() => { // for socket ref
+    sortDirectionFlagRef.current = sortDirectionFlag;
+  }, [sortDirectionFlag]);
+  useEffect(() => { // for socket ref
+    turboFlagRef.current = turboFlag;
+  }, [turboFlag]);
+  useEffect(() => { // for socket ref
+    defaultNodeValueRef.current = defaultNodeValue;
+  }, [defaultNodeValue]);
+  useEffect(() => { // for socket ref
+    defaultEdgeColorRef.current = defaultEdgeColor;
+  }, [defaultEdgeColor]);
+  useEffect(() => { // for socket ref
+    tempRefRef.current = tempRef;
+  }, [tempRef])
 
-  // SOCKET
-  const { sendMessage, connected } = useWebSocket(roomId, (msg) => {
-    // 메시지 타입에 따라 처리
-    // settings면 tempRef로 이관하기
-    if (msg.type === 'node_add') {
+  /**
+   * 소켓 통신에서 수신한 메세지 타입에 따라 처리
+   */
+  const handleMessage = useCallback((msg, recursionFlag = false, recursionNodes = [], recursionEdges = []) => {
+    //동기화되지않는레퍼런스처리
+    const currentSetModeFlag = setModeFlagRef?.current;
+    const fitViewFlag = autoFitViewFlagRef?.current;
+    const sortDirFlag = sortDirectionFlagRef?.current;
+    const themeFlag = turboFlagRef?.current;
+    const defaultNodeVal = defaultNodeValueRef?.current;
+    const defaultEdgeClr = defaultEdgeColorRef?.current;
+    const temporaryFlow = tempRefRef; // for settings
+    if (msg.type === 'batch_update') {
+      const prevNodes = nodesRef?.current;
+      const prevEdges = edgesRef?.current;
+      const processMessages = async () => {
+        let nextNodes = prevNodes;
+        let nextEdges = prevEdges;
+
+        for (const subMsg of msg.payload) {
+          const result = await handleMessage(subMsg, true, nextNodes, nextEdges);
+          const { recursionNodes: updatedNodes, recursionEdges: updatedEdges } = result || {};
+          nextNodes = updatedNodes ?? nextNodes;
+          nextEdges = updatedEdges ?? nextEdges;
+        }
+        setLocalNodes(nextNodes);
+        setLocalEdges(nextEdges);
+      };
+
+      processMessages();
+    } else if (msg.type === 'node_add') {
       const newNode = {
         id: msg.payload.id,
         type: 'custom',
-        data: { label: `${defaultNodeValue}` },
+        data: { label: `${defaultNodeVal}` },
         position: msg.payload.position,
       }
-      if (setModeFlag)
-        tempRef.current.nodes = [...tempRef.current.nodes, newNode];
+      if (currentSetModeFlag)
+        temporaryFlow.current.nodes = [...temporaryFlow.current.nodes, newNode];
+      else if (recursionFlag)
+        return { recursionNodes: [...recursionNodes, newNode], recursionEdges: recursionEdges }
       else
         setLocalNodes((prevNodes) => [...prevNodes, newNode]);
     } else if (msg.type === "node_move") {
@@ -141,8 +198,10 @@ const FlowCanvas = ({ roomId }) => {
             position: msg.payload.position,
           } : node
         );
-      if (setModeFlag)
-        tempRef.current.nodes = moveNodes(tempRef.current.nodes, msg)
+      if (currentSetModeFlag)
+        temporaryFlow.current.nodes = moveNodes(temporaryFlow.current.nodes, msg)
+      else if (recursionFlag)
+        return { recursionNodes: moveNodes(recursionNodes, msg), recursionEdges }
       else
         setLocalNodes((prevNodes) => moveNodes(prevNodes, msg));
     } else if (msg.type === "node_update") {
@@ -157,38 +216,27 @@ const FlowCanvas = ({ roomId }) => {
             },
           } : node
         );
-      if (setModeFlag)
-        tempRef.current.nodes = updateNodes(tempRef.current.nodes, msg)
+      if (currentSetModeFlag)
+        temporaryFlow.current.nodes = updateNodes(temporaryFlow.current.nodes, msg)
+      else if (recursionFlag)
+        return { recursionNodes: updateNodes(recursionNodes, msg), recursionEdges }
       else
         setLocalNodes((prevNodes) => updateNodes(prevNodes, msg));
     } else if (msg.type === "node_delete") { // 함수화X
-      const targetNode = tempRef.current.find(node => node.id === msg.payload.id);
-      if (setModeFlag) {
-        const tempRefNodes = tempRef.current.nodes;
-        const tempRefEdges = tempRef.current.edges;
-        tempRef.current.edges = tempRefNodes.reduce((acc, node) => {
-          const incomers = getIncomers(node, tempRefNodes, tempRefEdges);
-          const outgoers = getOutgoers(node, tempRefNodes, tempRefEdges);
-          const connectedEdges = getConnectedEdges([node], tempRefEdges);
-          const remainingEdges = acc.filter(
-            (edge) => !connectedEdges.includes(edge),
-          );
-          const createdEdges = incomers.flatMap(({ id: source }) =>
-            outgoers.map(({ id: target }) => ({
-              id: `xy-edge__${source}-${target}`,
-              source,
-              target,
-              style: {
-                ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
-                strokeWidth: 3
-              },
-            })),
-          );
-          return [...remainingEdges, ...createdEdges];
-        }, tempRefEdges)
-        tempRef.current.nodes = tempRefNodes.filter(node => node.id !== msg.payload.id);
+      if (currentSetModeFlag) {
+        const targetNode = temporaryFlow.current.find(node => node.id === msg.payload.id);
+        temporaryFlow.current.edges = onNodesDeleteRef.current([targetNode], temporaryFlow.current)
+        temporaryFlow.current.nodes = temporaryFlow.current.nodes.filter(node => node.id !== msg.payload.id);
+      } else if (recursionFlag) {
+        const targetRecursionNode = recursionNodes.find(node => node.id === msg.payload.id);
+        const recursionFlow = { nodes: recursionNodes, edges: recursionEdges };
+        return {
+          recursionNodes: recursionNodes.filter(node => node.id !== msg.payload.id),
+          recursionEdges: onNodesDeleteRef.current([targetRecursionNode], recursionFlow)
+        }
       } else {
-        targetNode && onNodesDelete([targetNode]);
+        const targetNode = nodesRef?.current.find(node => node.id === msg.payload.id);
+        targetNode && onNodesDeleteRef.current([targetNode]);
         setLocalNodes((prev) => prev.filter(node => node.id !== msg.payload.id));
       }
     } else if (msg.type === "edge_add") {
@@ -197,12 +245,14 @@ const FlowCanvas = ({ roomId }) => {
         source: msg.payload.source,
         target: msg.payload.target,
         style: {
-          ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+          ...(themeFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeClr) }),
           strokeWidth: 3
         }
       }
-      if (setModeFlag)
-        tempRef.current.edges = [...tempRef.current.edges, newEdge]
+      if (currentSetModeFlag)
+        temporaryFlow.current.edges = [...temporaryFlow.current.edges, newEdge]
+      else if (recursionFlag)
+        return { recursionNodes, recursionEdges: [...recursionEdges, newEdge] }
       else
         setLocalEdges((prevEdges) => [...prevEdges, newEdge]);
     } else if (msg.type === "edge_delete") {
@@ -210,30 +260,48 @@ const FlowCanvas = ({ roomId }) => {
         prevEdges.filter((edge) =>
           edge.id !== msg.payload.id
         );
-      if (setModeFlag)
-        tempRef.current.edges = remainEdges(tempRef.current.edges, msg);
+      if (currentSetModeFlag)
+        temporaryFlow.current.edges = remainEdges(temporaryFlow.current.edges, msg);
+      else if (recursionFlag)
+        return { recursionNodes, recursionEdges: remainEdges(recursionEdges, msg) }
       else
         setLocalEdges((prevEdges) => remainEdges(prevEdges, msg));
     } else if (msg.type === "elk_layout") {
-      (async () => {
+      return (async () => {
+        if (recursionFlag) {
+          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+            [...recursionNodes],
+            [...recursionEdges],
+            sortDirFlag ? 'DOWN' : 'RIGHT');
+          return {
+            recursionNodes: newNodes,
+            recursionEdges: newEdges,
+          }
+        }
         const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
-          [...nodesRef.current],
-          [...edgesRef.current],
-          sortDirectionFlag ? 'DOWN' : 'RIGHT');
-        if (setModeFlag) {
-          tempRef.current.nodes = newNodes;
-          tempRef.current.edges = newEdges;
+          [...nodesRef?.current],
+          [...edgesRef?.current],
+          sortDirFlag ? 'DOWN' : 'RIGHT');
+        if (currentSetModeFlag) {
+          temporaryFlow.current.nodes = newNodes;
+          temporaryFlow.current.edges = newEdges;
         } else {
           setLocalNodes(() => [...newNodes]);
           setLocalEdges(() => [...newEdges]);
-          if (autoFitViewFlag)
+          if (fitViewFlag)
             setTimeout(() => {
               fitView({ padding: 0.2 });
             }, 50);
         }
       })();
+
+    } else if (msg.type === "you_are_host") {
+      setHostFlag(true);
     }
-  });
+  }, [autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
+
+  const { sendMessage, connected } = useWebSocket(roomId, handleMessage);
+  const socketFlag = roomId !== 'local' && connected;
 
   /**
    * 간선이 되지 않은 connect 과정의 선 스타일
@@ -450,56 +518,64 @@ const FlowCanvas = ({ roomId }) => {
    * 노드 삭제 이후 동작 : 
    * 삭제된 노드에 연결되었던 간선을 노드가 없었을 때의 연결된 간선으로 대체
    */
-  const onNodesDelete = useCallback((deleted) => {
+  const onNodesDelete = useCallback((deleted, flow = false) => {
     dispatch(clearSelectedNode());
-    setLocalEdges(
-      deleted.reduce((acc, node) => {
-        const incomers = getIncomers(node, nodes, edges);
-        const outgoers = getOutgoers(node, nodes, edges);
-        const connectedEdges = getConnectedEdges([node], edges);
+    const targetNodes = flow ? flow.nodes : nodes;
+    const targetEdges = flow ? flow.edges : edges;
+    const newEdges = deleted.reduce((acc, node) => {
+      const incomers = getIncomers(node, targetNodes, targetEdges);
+      const outgoers = getOutgoers(node, targetNodes, targetEdges);
+      const connectedEdges = getConnectedEdges([node], targetEdges);
 
-        const remainingEdges = acc.filter(
-          (edge) => !connectedEdges.includes(edge),
-        );
+      const remainingEdges = acc.filter(
+        (edge) => !connectedEdges.includes(edge),
+      );
 
-        const createdEdges = incomers.flatMap(({ id: source }) =>
-          outgoers.map(({ id: target }) => ({
-            id: `xy-edge__${source}-${target}`,
-            source,
-            target,
-            style: {
-              ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
-              strokeWidth: 3
-            },
-          })),
-        );
+      const createdEdges = incomers.flatMap(({ id: source }) =>
+        outgoers.map(({ id: target }) => ({
+          id: `xy-edge__${source}-${target}`,
+          source,
+          target,
+          style: {
+            ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+            strokeWidth: 3
+          },
+        })),
+      );
 
-        if (connected && !setModeFlag) {
-          createdEdges.forEach((edge) => {
-            sendMessage({
-              type: "edge_add",
-              payload: {
-                id: `xy-edge__${edge.source}-${edge.target}`,
-                source: edge.source,
-                target: edge.target,
-              }
-            });
-          });
-        }
-
-        if (connected && !setModeFlag) {
+      if (connected && !setModeFlag) {
+        createdEdges.forEach((edge) => {
           sendMessage({
-            type: "node_delete",
+            type: "edge_add",
             payload: {
-              id: node.id,
+              id: `xy-edge__${edge.source}-${edge.target}`,
+              source: edge.source,
+              target: edge.target,
             }
           });
-        }
+        });
+      }
 
-        return [...remainingEdges, ...createdEdges];
-      }, edges),
-    );
+      if (connected && !setModeFlag) {
+        sendMessage({
+          type: "node_delete",
+          payload: {
+            id: node.id,
+          }
+        });
+      }
+
+      return [...remainingEdges, ...createdEdges];
+    }, targetEdges)
+    if (flow)
+      return newEdges;
+    else
+      setLocalEdges(newEdges);
   }, [dispatch, setLocalEdges, nodes, edges, turboFlag, defaultEdgeColor, connected, sendMessage, setModeFlag]);
+
+  useEffect(() => {
+    onNodesDeleteRef.current = onNodesDelete;
+  }, [onNodesDelete]);
 
   /**
    * 노드 클릭 이후 동작 : 
@@ -657,32 +733,6 @@ const FlowCanvas = ({ roomId }) => {
   }, [setLocalNodes, setLocalEdges, nodes, edges, fitView, sortDirectionFlag, autoFitViewFlag, connected, sendMessage, setModeFlag]);
 
   /**
-   * settings에 진입하는 애니메이션을 위한 함수 :
-   * 비동기 함수이므로 이 동작이 끝난 이후 다음 코드를 실행함
-   * @param {number} duration - 기본값 0.8초, 지정된 시간 동안 줌아웃을 실행
-   */
-  const zoomOut = useCallback((targetZoom = 0.1, duration = 800) => {
-    return new Promise((resolve) => {
-      const { x: startX, y: startY, zoom: startZoom } = getViewport();
-      const startTime = performance.now();
-      function animate(time) {
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const newZoom = startZoom + (targetZoom - startZoom) * progress;
-
-        setViewport({ x: startX, y: startY, zoom: newZoom });
-
-        if (progress < 1) {
-          requestAnimationFrame(animate);
-        } else {
-          resolve();
-        }
-      }
-      requestAnimationFrame(animate);
-    });
-  }, [getViewport, setViewport])
-
-  /**
    * [Dial] settings 모드로 진입하는 함수 : 
    * 비동기 함수이며 줌아웃 이후 지정된 settings nodes와 edges를 가져와 settings 모드로 진입한다.
    */
@@ -690,7 +740,6 @@ const FlowCanvas = ({ roomId }) => {
     setRenderCnt(rerender_key);
     if (rfInstance)
       setTempRef(rfInstance.toObject());
-    await zoomOut();
     dispatch(activateSetModeFlag());
     setLocalNodes(
       turboFlag ?
@@ -702,7 +751,6 @@ const FlowCanvas = ({ roomId }) => {
         settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
   }, [
     dispatch,
-    zoomOut,
     setLocalEdges,
     setLocalNodes,
     defaultNodeValue,
@@ -767,7 +815,7 @@ const FlowCanvas = ({ roomId }) => {
       settings: flowSettings(),
     }
     const encoded = encodeFlowToUrlParam(data);
-    const url = `${window.location.origin}/StarryFlow/main#data=${encoded}`;
+    const url = `${window.location.origin}/StarryFlow/map/local#data=${encoded}`;
 
     navigator.clipboard.writeText(url)
       .catch(err => {
@@ -890,6 +938,8 @@ const FlowCanvas = ({ roomId }) => {
         goCanvas={handleSaveSettings}
         onShare={urlCopy}
         onReset={onReset}
+        socketON={socketFlag}
+        hostFlag={hostFlag}
       />
     </div>
   );
