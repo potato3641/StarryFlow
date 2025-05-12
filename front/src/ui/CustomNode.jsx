@@ -1,6 +1,6 @@
 import React, { memo, useEffect } from 'react';
 import { Handle, Position, useConnection, useStore } from '@xyflow/react';
-import { activateFabGlowStyle, deactivateFabGlowStyle } from '../style';
+import { activateNodeGlowStyle, deactivateNodeGlowStyle } from '../style';
 import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedNode } from '../redux/flowSlice';
 import { glowedColor } from '../utils/utils';
@@ -39,7 +39,7 @@ const CustomNode = ({ data, id, selected }) => {
     <div
       className="customNode node-wrapper gradient"
       style={{
-        ...(selected ? activateFabGlowStyle : deactivateFabGlowStyle),
+        ...(selected ? activateNodeGlowStyle : deactivateNodeGlowStyle),
         background: selected ? glowedColor(defaultNodeColor) : defaultNodeColor,
         textAlign: defaultNodeAlign,
       }}

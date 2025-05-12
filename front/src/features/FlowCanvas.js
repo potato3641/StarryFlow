@@ -108,6 +108,7 @@ const FlowCanvas = ({ roomId }) => {
   const [flowData, setFlowData] = useState(null);
   const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
   // SOCKET
+  const [hostFlag, setHostFlag] = useState(false);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const onNodesDeleteRef = useRef();
@@ -157,25 +158,25 @@ const FlowCanvas = ({ roomId }) => {
     const themeFlag = turboFlagRef?.current;
     const defaultNodeVal = defaultNodeValueRef?.current;
     const defaultEdgeClr = defaultEdgeColorRef?.current;
-    const temporaryFlow = tempRefRef;
+    const temporaryFlow = tempRefRef; // for settings
     if (msg.type === 'batch_update') {
       const prevNodes = nodesRef?.current;
       const prevEdges = edgesRef?.current;
-      const { nextNodes, nextEdges } = msg.payload.reduce(
-        ({ nextNodes, nextEdges }, subMsg) => {
-          const { recursionNodes: updatedNodes, recursionEdges: updatedEdges } = handleMessage(subMsg, true, nextNodes, nextEdges);
-          return {
-            nextNodes: updatedNodes,
-            nextEdges: updatedEdges,
-          };
-        },
-        {
-          nextNodes: prevNodes,
-          nextEdges: prevEdges,
+      const processMessages = async () => {
+        let nextNodes = prevNodes;
+        let nextEdges = prevEdges;
+
+        for (const subMsg of msg.payload) {
+          const result = await handleMessage(subMsg, true, nextNodes, nextEdges);
+          const { recursionNodes: updatedNodes, recursionEdges: updatedEdges } = result || {};
+          nextNodes = updatedNodes ?? nextNodes;
+          nextEdges = updatedEdges ?? nextEdges;
         }
-      )
-      setLocalNodes(nextNodes);
-      setLocalEdges(nextEdges);
+        setLocalNodes(nextNodes);
+        setLocalEdges(nextEdges);
+      };
+
+      processMessages();
     } else if (msg.type === 'node_add') {
       const newNode = {
         id: msg.payload.id,
@@ -222,19 +223,20 @@ const FlowCanvas = ({ roomId }) => {
       else
         setLocalNodes((prevNodes) => updateNodes(prevNodes, msg));
     } else if (msg.type === "node_delete") { // 함수화X
-      const targetNode = temporaryFlow.current.find(node => node.id === msg.payload.id);
       if (currentSetModeFlag) {
-        temporaryFlow.current.edges = onNodesDeleteRef([targetNode], temporaryFlow.current)
+        const targetNode = temporaryFlow.current.find(node => node.id === msg.payload.id);
+        temporaryFlow.current.edges = onNodesDeleteRef.current([targetNode], temporaryFlow.current)
         temporaryFlow.current.nodes = temporaryFlow.current.nodes.filter(node => node.id !== msg.payload.id);
       } else if (recursionFlag) {
         const targetRecursionNode = recursionNodes.find(node => node.id === msg.payload.id);
         const recursionFlow = { nodes: recursionNodes, edges: recursionEdges };
         return {
           recursionNodes: recursionNodes.filter(node => node.id !== msg.payload.id),
-          recursionEdges: onNodesDeleteRef([targetRecursionNode], recursionFlow)
+          recursionEdges: onNodesDeleteRef.current([targetRecursionNode], recursionFlow)
         }
       } else {
-        targetNode && onNodesDeleteRef([targetNode]);
+        const targetNode = nodesRef?.current.find(node => node.id === msg.payload.id);
+        targetNode && onNodesDeleteRef.current([targetNode]);
         setLocalNodes((prev) => prev.filter(node => node.id !== msg.payload.id));
       }
     } else if (msg.type === "edge_add") {
@@ -265,35 +267,41 @@ const FlowCanvas = ({ roomId }) => {
       else
         setLocalEdges((prevEdges) => remainEdges(prevEdges, msg));
     } else if (msg.type === "elk_layout") {
-      (async () => {
+      return (async () => {
         if (recursionFlag) {
           const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
             [...recursionNodes],
             [...recursionEdges],
             sortDirFlag ? 'DOWN' : 'RIGHT');
-          return { recursionNodes: newNodes, recursionEdges: newEdges }
-        } else {
-          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
-            [...nodesRef?.current],
-            [...edgesRef?.current],
-            sortDirFlag ? 'DOWN' : 'RIGHT');
-          if (currentSetModeFlag) {
-            temporaryFlow.current.nodes = newNodes;
-            temporaryFlow.current.edges = newEdges;
-          } else {
-            setLocalNodes(() => [...newNodes]);
-            setLocalEdges(() => [...newEdges]);
-            if (fitViewFlag)
-              setTimeout(() => {
-                fitView({ padding: 0.2 });
-              }, 50);
+          return {
+            recursionNodes: newNodes,
+            recursionEdges: newEdges,
           }
         }
+        const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+          [...nodesRef?.current],
+          [...edgesRef?.current],
+          sortDirFlag ? 'DOWN' : 'RIGHT');
+        if (currentSetModeFlag) {
+          temporaryFlow.current.nodes = newNodes;
+          temporaryFlow.current.edges = newEdges;
+        } else {
+          setLocalNodes(() => [...newNodes]);
+          setLocalEdges(() => [...newEdges]);
+          if (fitViewFlag)
+            setTimeout(() => {
+              fitView({ padding: 0.2 });
+            }, 50);
+        }
       })();
+
+    } else if (msg.type === "you_are_host") {
+      setHostFlag(true);
     }
   }, [autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
 
   const { sendMessage, connected } = useWebSocket(roomId, handleMessage);
+  const socketFlag = roomId !== 'local' && connected;
 
   /**
    * 간선이 되지 않은 connect 과정의 선 스타일
@@ -807,7 +815,7 @@ const FlowCanvas = ({ roomId }) => {
       settings: flowSettings(),
     }
     const encoded = encodeFlowToUrlParam(data);
-    const url = `${window.location.origin}/StarryFlow/main#data=${encoded}`;
+    const url = `${window.location.origin}/StarryFlow/map/local#data=${encoded}`;
 
     navigator.clipboard.writeText(url)
       .catch(err => {
@@ -930,6 +938,8 @@ const FlowCanvas = ({ roomId }) => {
         goCanvas={handleSaveSettings}
         onShare={urlCopy}
         onReset={onReset}
+        socketON={socketFlag}
+        hostFlag={hostFlag}
       />
     </div>
   );

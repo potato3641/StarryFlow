@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './NavDial.css';
-import { activateFabShadowStyle, deactivateFabShadowStyle } from '../style'; // icon style
+import {
+  activateFabShadowStyle,
+  deactivateFabShadowStyle,
+  activateFabGlowStyle,
+  deactivateFabGlowStyle,
+} from '../style'; // icon style
 import { SpeedDial, SpeedDialAction, Snackbar, Slide, Box } from '@mui/material'; // component
 import Tooltip from '@mui/material/Tooltip';
 import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified, RestoreFromTrash } from '@mui/icons-material'; // icon
@@ -52,7 +57,7 @@ function SlideTransition(props) {
   return <Slide {...props} direction="right" />;
 }
 
-const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onShare, onReset }) => {
+const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onShare, onReset, socketON, hostFlag }) => {
 
   // REDUX
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
@@ -91,6 +96,15 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
   ];
 
   const setModeActions = ['3'];
+  const socketActions = ['3', '4', '5', '6', '9'];
+
+  useEffect(() => {
+    if (socketON)
+      handleClick('Socket connected', 10)
+    else
+      handleClick('Socket connection lost', 11)
+    // eslint-disable-next-line
+  }, [socketON])
 
   return (
     <div>
@@ -107,21 +121,21 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
           },
           '& .MuiSpeedDial-fab': {
             color: 'black',
-            ...deactivateFabShadowStyle,
+            ...hostFlag ? deactivateFabGlowStyle : deactivateFabShadowStyle,
           },
           '& .MuiSpeedDial-fab:hover': {
-            ...activateFabShadowStyle,
+            ...hostFlag ? activateFabGlowStyle : activateFabShadowStyle,
           }
         }}
         icon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
         openIcon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
       >
-        {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : actions).map((action) => (
+        {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : socketON ? actions.filter(action => socketActions.includes(action.id)) : actions).map((action) => (
           <SpeedDialAction
             sx={{
-              ...deactivateFabShadowStyle,
+              ...hostFlag ? deactivateFabGlowStyle : deactivateFabShadowStyle,
               '&:hover': {
-                ...activateFabShadowStyle,
+                ...hostFlag ? activateFabGlowStyle : activateFabShadowStyle,
               }
             }}
             key={action.name}
