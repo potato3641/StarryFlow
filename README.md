@@ -178,6 +178,15 @@
           }
         }
       ```
+     - 데이터 일괄불러오기 - "batch_update"
+      ```JSON
+        {
+          type: "batch_update",
+          payload: {
+            {JSON}, ...
+          }
+        }
+      ```
  - 보안관련 자료수집
  - 제작중인 기능
    - ~~노드 Position (x, y) - "node_move"~~ -> 완료
@@ -219,9 +228,13 @@
    - 이외 비슷한 문제 동일처리
    - 이를 해결하고보니 zoomOut이 비동기 이후 처리하는 함수라 zoomOut시간이 고스란히 동기화되지않는시간임
  - ~~zoomOut버려?~~ -> 버림
-## develop task - progress
  - 동기화를 서버만 해놓고 react에서 안받았다!
    - 로그 한번에 받을때 resizerobserver 루프초과 이슈 있음
+   - ~~해결방안 : 사전 규약에 batch_update 신설~~ -> 완료
+     - 서버 설정 완료
+     - onNodesDelete는 그만 놔주고 직접 만들어야겠다
+## develop task - progress
+ - 2차 사용성테스트
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
