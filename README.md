@@ -187,6 +187,12 @@
           }
         }
       ```
+     - 맵 초기화 - "flow_clear"
+      ```JSON
+        {
+          type: "flow_clear"
+        }
+      ```
  - 보안관련 자료수집
  - 제작중인 기능
    - ~~노드 Position (x, y) - "node_move"~~ -> 완료
@@ -233,7 +239,6 @@
    - ~~해결방안 : 사전 규약에 batch_update 신설~~ -> 완료
      - 서버 설정 완료
      - ~~onNodesDelete는 그만 놔주고 직접 만들어야겠다~~ -> 안놔주고 onNodesDelete를 재사용성 있게 수정함
-## develop task - progress
  - 2차 사용성테스트
    - ~~connect가 끊겼을 때 알림이 콘솔에서밖에 없음~~
    - ~~socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)~~
@@ -241,7 +246,20 @@
    - ~~node delete시 null.find하는 문제(정확히는 delete했을 때 broadcast시, null이 되는 문제)~~
    - ~~guest 변화가 서버 host기록에 저장되지않음. (host작성 -> guest작성 -> 새로고침 -> guest는 작성이전상태)~~
    - ~~host여부를 보여줬으면 좋겠는데~~ -> dial 색상으로 완료
-   - next
+   - ~~색상으로 완료하는게 맞음? host 표기좀~~ -> 호스트용 아이콘 생성
+   - ~~왜 올때마다 connection lost임 local에서도~~ -> 첫입장 플래그로 false초기화시 문제 해결
+   - ~~clearFlow까먹었네~~
+     - clearFlow를 allow_type에 안넣어놓고 왜 서버가 꺼지지 이러고있었네
+     - 하는김에 호스트 연결종료되면 오버레이로 덮어씌움
+     - 이거덕분에 타입 다른 메세지로 인한 ValueError시에 발생하는 서버 오류 해결함
+   - ~~fitView는 어쩔까~~ -> 데이터에 영향이 없으니 제외
+   - ~~help가 없다 튜토리얼 제작하기(무조건만들것)~~ -> 완성
+   - connection lost가 로컬 상태일때 사라지지 않는 버그 수정
+   - host의 색상을 조금 더 밝게 수정함
+## develop task - progress
+ - 2차 사용성테스트
+   - 다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기
+   - 가이드에 줌아웃, 끌어내리기 설명 추가하기
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
