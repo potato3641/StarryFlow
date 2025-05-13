@@ -74,7 +74,7 @@ const rerender_key = 2;
 
 const getNodeId = () => `randomnode_${+new Date()}`;
 
-const FlowCanvas = ({ roomId }) => {
+const FlowCanvas = ({ roomId, openGuide }) => {
   const flowKey = `${roomId || 'local'}-key`
   const flowSet = `${roomId || 'local'}-set`
   // REDUX
@@ -277,26 +277,40 @@ const FlowCanvas = ({ roomId }) => {
             recursionNodes: newNodes,
             recursionEdges: newEdges,
           }
-        }
-        const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
-          [...nodesRef?.current],
-          [...edgesRef?.current],
-          sortDirFlag ? 'DOWN' : 'RIGHT');
-        if (currentSetModeFlag) {
-          temporaryFlow.current.nodes = newNodes;
-          temporaryFlow.current.edges = newEdges;
         } else {
-          setLocalNodes(() => [...newNodes]);
-          setLocalEdges(() => [...newEdges]);
-          if (fitViewFlag)
-            setTimeout(() => {
-              fitView({ padding: 0.2 });
-            }, 50);
+          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+            [...nodesRef?.current],
+            [...edgesRef?.current],
+            sortDirFlag ? 'DOWN' : 'RIGHT');
+          if (currentSetModeFlag) {
+            temporaryFlow.current.nodes = newNodes;
+            temporaryFlow.current.edges = newEdges;
+          } else {
+            setLocalNodes(() => [...newNodes]);
+            setLocalEdges(() => [...newEdges]);
+            if (fitViewFlag)
+              setTimeout(() => {
+                fitView({ padding: 0.2 });
+              }, 50);
+          }
         }
       })();
 
     } else if (msg.type === "you_are_host") {
       setHostFlag(true);
+    } else if (msg.type === "flow_clear") {
+      if (currentSetModeFlag) {
+        temporaryFlow.current.nodes = [];
+        temporaryFlow.current.edges = [];
+      } else if (recursionFlag) {
+        return {
+          recursionNodes: [],
+          recursionEdges: [],
+        }
+      } else {
+        setLocalNodes([]);
+        setLocalEdges([]);
+      }
     }
   }, [autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
 
@@ -829,8 +843,14 @@ const FlowCanvas = ({ roomId }) => {
   const onReset = useCallback(() => {
     setLocalEdges([]);
     setLocalNodes([]);
+    if (connected && !setModeFlag) {
+      sendMessage({
+        type: "flow_clear",
+        payload: {},
+      });
+    }
     dispatch(clearSelectedNode());
-  }, [dispatch, setLocalEdges, setLocalNodes])
+  }, [dispatch, setLocalEdges, setLocalNodes, connected, setModeFlag, sendMessage])
 
   /**
    * [socket] node move event handler
@@ -938,9 +958,15 @@ const FlowCanvas = ({ roomId }) => {
         goCanvas={handleSaveSettings}
         onShare={urlCopy}
         onReset={onReset}
+        onGuide={openGuide}
         socketON={socketFlag}
         hostFlag={hostFlag}
       />
+      {(!socketFlag && roomId !== 'local') && (
+        <div className="overlay">
+          connection lost
+        </div>
+      )}
     </div>
   );
 };

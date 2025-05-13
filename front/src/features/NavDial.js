@@ -8,7 +8,7 @@ import {
 } from '../style'; // icon style
 import { SpeedDial, SpeedDialAction, Snackbar, Slide, Box } from '@mui/material'; // component
 import Tooltip from '@mui/material/Tooltip';
-import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified, RestoreFromTrash } from '@mui/icons-material'; // icon
+import { Save, Replay, Share, Settings, ZoomInMap, Sort, Add, Verified, RestoreFromTrash, Home, QuestionMark } from '@mui/icons-material'; // icon
 import { keyframes } from '@mui/system';
 import { useSelector } from 'react-redux';
 
@@ -57,11 +57,12 @@ function SlideTransition(props) {
   return <Slide {...props} direction="right" />;
 }
 
-const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onShare, onReset, socketON, hostFlag }) => {
+const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onShare, onReset, onGuide, socketON, hostFlag }) => {
 
   // REDUX
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
+  const [firstConnectionFlag, setFirstConnectionFlag] = useState(true)
   const [state, setState] = useState({
     open: false,
     Transition: SlideTransition,
@@ -92,17 +93,19 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
     { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted', 4); } },
     { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...', 5); } },
     { id: '6', icon: <Share />, name: 'Share', onClick: () => { onShare(); handleClick('Copy Url', 6); } },
-    { id: '9', icon: <RestoreFromTrash />, name: 'Clear', onClick: () => { onReset(); handleClick('Clear Flow', 9) } }
+    { id: '9', icon: <RestoreFromTrash />, name: 'Clear', onClick: () => { onReset(); handleClick('Clear Flow', 9) } },
+    { id: '13', icon: <QuestionMark />, name: 'Guide', onClick: () => { onGuide(); handleClick('Open Tutorial', 13) } },
+    { id: '12', icon: <Home sx={{ color: 'primary.main' }} />, name: 'You are Host', onClick: () => { handleClick('You are Host', 12) } },
   ];
 
   const setModeActions = ['3'];
-  const socketActions = ['3', '4', '5', '6', '9'];
+  const socketActions = ['3', '4', '5', '6', '9', '12', '13'].filter(action => hostFlag || action !== '12');;
 
   useEffect(() => {
-    if (socketON)
+    if (socketON === true)
       handleClick('Socket connected', 10)
     else
-      handleClick('Socket connection lost', 11)
+      firstConnectionFlag ? setFirstConnectionFlag(false) : handleClick(`Socket connection lost`, 11);
     // eslint-disable-next-line
   }, [socketON])
 
