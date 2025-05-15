@@ -1,5 +1,5 @@
 // react
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 // redux
 import { useDispatch, useSelector } from 'react-redux';
@@ -98,7 +98,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   const turboFlag = useSelector((state) => state.flow.turboFlag);
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
-  const [prevNodeId, setPrevNodeId] = useState(null);
   const [tempRef, setTempRef] = useState(null);
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
@@ -320,16 +319,16 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   /**
    * 간선이 되지 않은 connect 과정의 선 스타일
    */
-  const connectionLineStyle = {
+  const connectionLineStyle = useMemo(() => ({
     stroke: turboFlag ? `url(#edge-gradient)` : rgbastr2hex(defaultEdgeColor),
     strokeWidth: 3,
     strokeOpacity: 0.75,
-  };
+  }), [turboFlag, defaultEdgeColor]);
 
   /**
    * 기본 간선 스타일
    */
-  const defaultEdgeOptions = {
+  const defaultEdgeOptions = useMemo(() => ({
     type: 'custom',
     markerEnd:
       turboFlag ? 'edge-circle' : 'edge-arrow',
@@ -337,7 +336,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
       strokeWidth: 3,
     }
-  };
+  }), [turboFlag, defaultEdgeColor]);
 
   //URL 변경을 감지하여 데이터를 등록
   useEffect(() => {
@@ -480,7 +479,14 @@ const FlowCanvas = ({ roomId, openGuide }) => {
    * 노드 간의 간선을 추가한다. settings 모드에 진입 시 유효한 값에 연결했을 경우 settings를 변경한다.
    */
   const onConnect = useCallback((params) => {
-    setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 3 } }, eds))
+    setLocalEdges((eds) => addEdge({
+      ...params,
+      style: {
+        ...params.style,
+        ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+        strokeWidth: 3
+      }
+    }, eds))
     if (connected && !setModeFlag) {
       sendMessage({
         type: "edge_add",
@@ -526,7 +532,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         default:
           console.error("Unauthorized Access")
       }
-  }, [dispatch, setLocalEdges, setModeFlag, connected, sendMessage]);
+  }, [dispatch, setLocalEdges, setModeFlag, turboFlag, defaultEdgeColor, connected, sendMessage]);
 
   /**
    * 노드 삭제 이후 동작 : 
@@ -620,10 +626,9 @@ const FlowCanvas = ({ roomId, openGuide }) => {
    */
   const onAdd = useCallback(() => {
     const id = getNodeId();
-    const prevNode = getNodes()?.find(node => node.id === prevNodeId);
     const screen = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
-    const x = typeof prevNode?.position?.x === 'number' ? prevNode.position.x + 20 : screen.x - getNodes()[0] ? getNodes()[0].measured.width / 2 : 0;
-    const y = typeof prevNode?.position?.x === 'number' ? prevNode.position.y + 20 : screen.y - getNodes()[0] ? getNodes()[0].measured.height / 2 : 0;
+    const x = screen.x - 25;
+    const y = screen.y - 25;
     const newNode = {
       id,
       type: 'custom',
@@ -646,8 +651,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         }
       });
     }
-    setPrevNodeId(id);
-  }, [setLocalNodes, nodes, defaultNodeValue, getNodes, screenToFlowPosition, prevNodeId, connected, sendMessage, setModeFlag]);
+  }, [setLocalNodes, nodes, defaultNodeValue, screenToFlowPosition, connected, sendMessage, setModeFlag]);
 
   /**
    * settings에서 설정한 값 반환
@@ -761,7 +765,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         settingNodes(defaultNodeValue, defaultNodeColor, defaultEdgeColor));
     setLocalEdges(
       turboFlag ?
-        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag).filter(edge => !['Notice->7', '7->nodecolor', 'Notice->10', '10->edgecolor'].includes(edge.id)) :
+        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag).filter(edge => !['xy-edge__Notice-7', 'xy-edge__7-nodecolor', 'xy-edge__Notice-10', 'xy-edge__10-edgecolor'].includes(edge.id)) :
         settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
   }, [
     dispatch,
@@ -799,19 +803,17 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       if (flow) {
         const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
         setLocalNodes(flow.nodes || []);
-        if (!turboFlag && flow.edges) {
-          const prevEdges = flow.edges.map((edge) => {
-            return {
-              ...edge,
-              style: {
-                ...edge.style,
-                stroke: rgbastr2hex(defaultEdgeColor),
-              }
+        const prevEdges = flow.edges.map((edge) => {
+          return {
+            ...edge,
+            style: {
+              ...edge.style,
+              ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+              strokeWidth: 3
             }
-          })
-          setLocalEdges(prevEdges || []);
-        } else
-          setLocalEdges(flow.edges);
+          }
+        })
+        setLocalEdges(prevEdges || []);
         setViewport({ x, y, zoom });
       }
     };
@@ -910,7 +912,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         fitView
       >
         {!(setModeFlag && !(id === 'value' || id === 'nodecolor' || id === 'edgecolor')) && existSelectedNode && (<NodePanel />)}
-        {!setModeFlag && mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
+        {!setModeFlag && mapFlag && (<MiniMap zoomable pannable nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
         <svg>
           <defs>
             <linearGradient id="edge-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">

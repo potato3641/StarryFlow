@@ -1,8 +1,6 @@
 import './GuideOveray.css';
 import React, { useState } from 'react';
 import { IconButton } from '@mui/material';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CloseIcon from '@mui/icons-material/Close';
 
 const dialTip = [
@@ -25,16 +23,15 @@ const GuideOveray = ({ roomId, closeGuide }) => {
   const [curPage, setCurPage] = useState(1);
   const totalPage = 5 + dialTip.length + (roomId === 'local' ? 2 : 0);
 
-  const handlePrev = () => {
-    setCurPage((prev) => Math.max(1, prev - 1));
-  };
-
   const handleNext = () => {
-    setCurPage((prev) => Math.min(totalPage, prev + 1));
+    if (curPage === totalPage)
+      closeGuide();
+    else
+      setCurPage((prev) => Math.min(totalPage, prev + 1));
   };
 
   return (
-    <div className="tutorial">
+    <div className="tutorial" onClick={handleNext}>
       {curPage === 1 && <div className="highlight editor">노드 편집기</div>}
       {curPage === 2 && <div className="highlight snackbar">상태 표시 알림</div>}
       {curPage === 3 && <div className="highlight minimap">Flow 요약<br />미니맵</div>}
@@ -51,15 +48,6 @@ const GuideOveray = ({ roomId, closeGuide }) => {
           </div>
         )
       )}
-      <div className="pagination">
-        <IconButton onClick={handlePrev} disabled={curPage === 1} size="small">
-          <ArrowBackIosNewIcon fontSize="medium" sx={{ color: 'white' }} />
-        </IconButton>
-        <div className="pager">{curPage} / {totalPage}</div>
-        <IconButton onClick={handleNext} disabled={curPage === totalPage} size="small">
-          <ArrowForwardIosIcon fontSize="medium" sx={{ color: 'white' }} />
-        </IconButton>
-      </div>
       <div className="closer">
         <IconButton onClick={closeGuide} size="small">
           <CloseIcon fontSize="medium" sx={{ color: 'white' }} />

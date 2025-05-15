@@ -99,7 +99,7 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
   ];
 
   const setModeActions = ['3'];
-  const socketActions = ['3', '4', '5', '6', '9', '12', '13'].filter(action => hostFlag || action !== '12');;
+  const socketActions = ['3', '4', '5', '6', '9', '12', '13'].filter(action => hostFlag || action !== '12');
 
   useEffect(() => {
     if (socketON === true)
@@ -133,7 +133,7 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
         icon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
         openIcon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
       >
-        {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : socketON ? actions.filter(action => socketActions.includes(action.id)) : actions).map((action) => (
+        {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : socketON ? actions.filter(action => socketActions.includes(action.id)) : actions.filter(action => action.id !== '12')).map((action) => (
           <SpeedDialAction
             sx={{
               ...hostFlag ? deactivateFabGlowStyle : deactivateFabShadowStyle,

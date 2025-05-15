@@ -27,7 +27,7 @@
 .turbo .react-flow {
   --bg-color: rgb(17, 17, 17);
   --text-color: rgb(243, 244, 246);
-  --node-border-radius: 20px;
+  --node-border-radius: 30px;
   --node-box-shadow: 10px 0 15px rgba(42, 138, 246, 0.3),
     -10px 0 15px rgba(233, 42, 103, 0.3);
   color: var(--text-color);
@@ -36,8 +36,9 @@
 .turbo .react-flow__node-custom {
   border-radius: var(--node-border-radius);
   display: flex;
-  min-height: 80px;
-  min-width: 140px;
+  min-height: 60px;
+  min-width: 105px;
+  max-width: 500px;
   font-weight: 500;
   box-shadow: var(--node-box-shadow);
 }
