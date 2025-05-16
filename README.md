@@ -304,13 +304,13 @@
      - 통계는 서버에서 하십시오 내용이 많을거같음
      - 어떤 통계를 할지는 다음 테스트에 하자. 아이디어없이 시간끄는느낌?
  - ~~발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음~~ 해결완료
+ - ~~compress 서버 전송 테스트하기~~
+ - ~~aws ec2 서버 구축하기~~
+ - ~~oracle cloud 정상화되면 다시 구동할생각도~~
+ - oracle로 서버 구축완료
 </details>
 
 ## develop task - progress
  - 발동 조건은 찾지 못했는데 게스트 입장시 getIncomer에서 id에러 있음
- - 
 ## develop task - wait
- - aws ec2 서버 구축하기
- - oracle cloud 정상화되면 다시 구동할생각도
- - compress 서버 전송 테스트하기
  - redis 사용예정
