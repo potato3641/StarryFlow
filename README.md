@@ -11,8 +11,8 @@
  3. ~~추후 가능하다면 클라우드에 저장~~ -> URL로 변경
  4. ~~추후 가능하다면 메모를 ai모델을 사용해서 요약 및 검색 기능까지...~~ -> 소켓 통신을 이용한 양방향 협업 기능
 <details>
-  <summary>develop task - complete</summary>
-
+  <summary>completed develop task</summary>
+## develop task - complete
  - map에 관한 아이디어
    - 디자인은 밤하늘 컨셉으로
    - 개체당 작업
@@ -195,6 +195,32 @@
           type: "flow_clear"
         }
       ```
+     - 호스트 초기화 - "batch_update_host"
+      ``` JSON
+        {
+          type: "batch_update_host",
+          payload: {
+            nodes: {
+              {
+                id,
+                position: {
+                  x,
+                  y,
+                },
+              },
+              ...
+            },
+            edges: {
+              {
+                id,
+                source,
+                target,
+              },
+              ...
+            }, 
+          }
+        }
+      ```
  - 보안관련 자료수집
  - 제작중인 기능
    - ~~노드 Position (x, y) - "node_move"~~ -> 완료
@@ -241,6 +267,7 @@
    - ~~해결방안 : 사전 규약에 batch_update 신설~~ -> 완료
      - 서버 설정 완료
      - ~~onNodesDelete는 그만 놔주고 직접 만들어야겠다~~ -> 안놔주고 onNodesDelete를 재사용성 있게 수정함
+ - develop task가 너무 길어져서 summary로 단축
  - 2차 사용성테스트
    - ~~connect가 끊겼을 때 알림이 콘솔에서밖에 없음~~
    - ~~socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)~~
@@ -264,20 +291,24 @@
    - turbo의 테두리를 조금 둥글게 수정함
    - ~~local에 host가있네?~~ -> 수정완료
    - 새 노드 생성위치 화면 중앙으로 변경
-</details>
-
-## develop task - progress
- - 2차 사용성테스트
-   - 다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기
+   - ~~connectEnd 부활시키기...~~ -> 프로젝트를 이정도 진행했더니 이제 바로 만들 수 있게됨
+   - ~~host가 데이터갖고오면 데이터 open할 수 있는 상태로 만들기...~~ -> 완료
+     - 데이터 크기 확인 -> ip 확인 -> 타입 확인 -> 기록저장하고 클라이언트로 허용여부 던지기
+     - 현재 모두허용인데 roomId있을때 host일경우 서버로 던지기(근데 클라이언트로 해야할듯)
+     - host 업데이트용 데이터 사전 규악 batch_update_host 추가
+   - ~~다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기~~
    - flow를 정리할 수 있게 하면 어떨까? UI적 정리 말고 데이터 정리로
      - 연결된 노드가 많을수록 밝아지는 UI도 좋아보인다
      - 연결된 노드의 정의는 leaf의 합계로?
      - 이거는 edge만 조사하면된다. regex로 걸러내서 빈도가 많은 노드 검출 가능
      - 통계는 서버에서 하십시오 내용이 많을거같음
-   - connectEnd 부활시키기...
-   - host가 데이터갖고오면 데이터 open할 수 있는 상태로 만들기...
-     - 데이터 크기 확인 -> ip 확인 -> 타입 확인 -> 기록저장하고 클라이언트로 허용여부 던지기
- - develop task가 너무 길어져서 summary로 단축
+     - 어떤 통계를 할지는 다음 테스트에 하자. 아이디어없이 시간끄는느낌?
+ - ~~발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음~~ 해결완료
+</details>
+
+## develop task - progress
+ - 발동 조건은 찾지 못했는데 게스트 입장시 getIncomer에서 id에러 있음
+ - 
 ## develop task - wait
  - aws ec2 서버 구축하기
  - oracle cloud 정상화되면 다시 구동할생각도
