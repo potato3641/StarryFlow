@@ -92,7 +92,7 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
     { id: '3', icon: <ZoomInMap />, name: 'FitView', onClick: () => { onFit(); handleClick('Done', 3); } },
     { id: '4', icon: <Sort />, name: 'Sort', onClick: () => { onSort(); handleClick('Sorted', 4); } },
     { id: '5', icon: <Settings />, name: 'Settings', onClick: () => { goSet(); handleClick('Settings Canvas Drawing...', 5); } },
-    { id: '6', icon: <Share />, name: 'Share', onClick: () => { onShare(); handleClick('Copy Url', 6); } },
+    { id: '6', icon: <Share />, name: 'Share', onClick: () => { onShare(); handleClick(`Copy Url${hostFlag ? '' : ' at Local'}`, 6); } },
     { id: '9', icon: <RestoreFromTrash />, name: 'Clear', onClick: () => { onReset(); handleClick('Clear Flow', 9) } },
     { id: '13', icon: <QuestionMark />, name: 'Guide', onClick: () => { onGuide(); handleClick('Open Tutorial', 13) } },
     { id: '12', icon: <Home sx={{ color: 'primary.main' }} />, name: 'You are Host', onClick: () => { handleClick('You are Host', 12) } },
