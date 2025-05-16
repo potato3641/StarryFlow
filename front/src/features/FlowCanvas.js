@@ -1,5 +1,5 @@
 // react
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 // redux
 import { useDispatch, useSelector } from 'react-redux';
@@ -74,7 +74,7 @@ const rerender_key = 2;
 
 const getNodeId = () => `randomnode_${+new Date()}`;
 
-const FlowCanvas = ({ roomId }) => {
+const FlowCanvas = ({ roomId, openGuide }) => {
   const flowKey = `${roomId || 'local'}-key`
   const flowSet = `${roomId || 'local'}-set`
   // REDUX
@@ -98,7 +98,6 @@ const FlowCanvas = ({ roomId }) => {
   const turboFlag = useSelector((state) => state.flow.turboFlag);
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
-  const [prevNodeId, setPrevNodeId] = useState(null);
   const [tempRef, setTempRef] = useState(null);
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
@@ -119,6 +118,7 @@ const FlowCanvas = ({ roomId }) => {
   const turboFlagRef = useRef();
   const defaultNodeValueRef = useRef();
   const defaultEdgeColorRef = useRef();
+  const flowDataRef = useRef();
   useEffect(() => { // for socket elk refenence
     nodesRef.current = nodes;
   }, [nodes]);
@@ -146,6 +146,9 @@ const FlowCanvas = ({ roomId }) => {
   useEffect(() => { // for socket ref
     tempRefRef.current = tempRef;
   }, [tempRef])
+  useEffect(() => { // for socket ref
+    flowDataRef.current = flowData;
+  }, [flowData])
 
   /**
    * 소켓 통신에서 수신한 메세지 타입에 따라 처리
@@ -160,8 +163,8 @@ const FlowCanvas = ({ roomId }) => {
     const defaultEdgeClr = defaultEdgeColorRef?.current;
     const temporaryFlow = tempRefRef; // for settings
     if (msg.type === 'batch_update') {
-      const prevNodes = nodesRef?.current;
-      const prevEdges = edgesRef?.current;
+      const prevNodes = [];
+      const prevEdges = [];
       const processMessages = async () => {
         let nextNodes = prevNodes;
         let nextEdges = prevEdges;
@@ -277,28 +280,69 @@ const FlowCanvas = ({ roomId }) => {
             recursionNodes: newNodes,
             recursionEdges: newEdges,
           }
-        }
-        const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
-          [...nodesRef?.current],
-          [...edgesRef?.current],
-          sortDirFlag ? 'DOWN' : 'RIGHT');
-        if (currentSetModeFlag) {
-          temporaryFlow.current.nodes = newNodes;
-          temporaryFlow.current.edges = newEdges;
         } else {
-          setLocalNodes(() => [...newNodes]);
-          setLocalEdges(() => [...newEdges]);
-          if (fitViewFlag)
-            setTimeout(() => {
-              fitView({ padding: 0.2 });
-            }, 50);
+          const { nodes: newNodes, edges: newEdges } = await layoutWithElk(
+            [...nodesRef?.current],
+            [...edgesRef?.current],
+            sortDirFlag ? 'DOWN' : 'RIGHT');
+          if (currentSetModeFlag) {
+            temporaryFlow.current.nodes = newNodes;
+            temporaryFlow.current.edges = newEdges;
+          } else {
+            setLocalNodes(() => [...newNodes]);
+            setLocalEdges(() => [...newEdges]);
+            if (fitViewFlag)
+              setTimeout(() => {
+                fitView({ padding: 0.2 });
+              }, 50);
+          }
         }
       })();
 
     } else if (msg.type === "you_are_host") {
       setHostFlag(true);
+      if (!flowDataRef?.current?.flow) {
+        setLocalNodes([]);
+        setLocalEdges([]);
+      } else {
+        const batchFlow = {
+          nodes: flowDataRef?.current?.flow.nodes.map((node) => ({
+            type: "node_add",
+            payload: {
+              id: node.id,
+              position: node.position,
+            }
+          })),
+          edges: flowDataRef?.current?.flow.edges.map((edge) => ({
+            type: "edge_add",
+            payload: {
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+            }
+          })),
+        };
+        sendMessage({
+          type: "batch_update_host",
+          payload: batchFlow,
+        });
+      }
+    } else if (msg.type === "flow_clear") {
+      if (currentSetModeFlag) {
+        temporaryFlow.current.nodes = [];
+        temporaryFlow.current.edges = [];
+      } else if (recursionFlag) {
+        return {
+          recursionNodes: [],
+          recursionEdges: [],
+        }
+      } else {
+        setLocalNodes([]);
+        setLocalEdges([]);
+      }
     }
-  }, [autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
+    // eslint-disable-next-line
+  }, [flowDataRef, autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
 
   const { sendMessage, connected } = useWebSocket(roomId, handleMessage);
   const socketFlag = roomId !== 'local' && connected;
@@ -306,16 +350,16 @@ const FlowCanvas = ({ roomId }) => {
   /**
    * 간선이 되지 않은 connect 과정의 선 스타일
    */
-  const connectionLineStyle = {
+  const connectionLineStyle = useMemo(() => ({
     stroke: turboFlag ? `url(#edge-gradient)` : rgbastr2hex(defaultEdgeColor),
     strokeWidth: 3,
     strokeOpacity: 0.75,
-  };
+  }), [turboFlag, defaultEdgeColor]);
 
   /**
    * 기본 간선 스타일
    */
-  const defaultEdgeOptions = {
+  const defaultEdgeOptions = useMemo(() => ({
     type: 'custom',
     markerEnd:
       turboFlag ? 'edge-circle' : 'edge-arrow',
@@ -323,7 +367,7 @@ const FlowCanvas = ({ roomId }) => {
       ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
       strokeWidth: 3,
     }
-  };
+  }), [turboFlag, defaultEdgeColor]);
 
   //URL 변경을 감지하여 데이터를 등록
   useEffect(() => {
@@ -337,30 +381,32 @@ const FlowCanvas = ({ roomId }) => {
 
   // URL데이터 등록을 감지하여 로컬에 이관
   useEffect(() => {
-    const flow = flowData?.flow;
-    const settings = flowData?.settings;
-    if (flow) {
-      localStorage.setItem(flowKey, JSON.stringify(flow));
-      const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
-      setLocalNodes(flow.nodes || []);
-      setLocalEdges(flow.edges || []);
-      setViewport({ x, y, zoom });
+    if (flowData) {
+      const flow = flowData?.flow;
+      const settings = flowData?.settings;
+      if (flow) {
+        localStorage.setItem(flowKey, JSON.stringify(flow));
+        const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
+        setLocalNodes(flow.nodes || []);
+        setLocalEdges(flow.edges || []);
+        setViewport({ x, y, zoom });
+      }
+      if (settings) {
+        localStorage.setItem(flowSet, JSON.stringify(settings));
+        dispatch(setDefaultNodeValue(settings.defaultNodeValue));
+        dispatch(setDefaultNodeColor(settings.defaultNodeColor));
+        dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
+        dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
+        dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
+        dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
+        dispatch(setMapFlag(settings.mapFlag));
+        dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
+        dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
+        dispatch(setTurboFlag(settings.turboFlag));
+      }
+      if (flow && settings)
+        window.history.replaceState(null, '', window.location.pathname)
     }
-    if (settings) {
-      localStorage.setItem(flowSet, JSON.stringify(settings));
-      dispatch(setDefaultNodeValue(settings.defaultNodeValue));
-      dispatch(setDefaultNodeColor(settings.defaultNodeColor));
-      dispatch(setDefaultEdgeColor(settings.defaultEdgeColor));
-      dispatch(setDefaultNodeAlign(settings.defaultNodeAlign));
-      dispatch(setSortDirectionFlag(settings.sortDirectionFlag));
-      dispatch(setAutoFitViewFlag(settings.autoFitViewFlag));
-      dispatch(setMapFlag(settings.mapFlag));
-      dispatch(setCycleValidateFlag(settings.cycleValidateFlag));
-      dispatch(setZoomOutBlurFlag(settings.zoomOutBlurFlag));
-      dispatch(setTurboFlag(settings.turboFlag));
-    }
-    if (flow && settings)
-      window.history.replaceState(null, '', window.location.pathname)
     // eslint-disable-next-line
   }, [flowData, dispatch]);
 
@@ -466,7 +512,14 @@ const FlowCanvas = ({ roomId }) => {
    * 노드 간의 간선을 추가한다. settings 모드에 진입 시 유효한 값에 연결했을 경우 settings를 변경한다.
    */
   const onConnect = useCallback((params) => {
-    setLocalEdges((eds) => addEdge({ ...params, style: { ...params.style, strokeWidth: 3 } }, eds))
+    setLocalEdges((eds) => addEdge({
+      ...params,
+      style: {
+        ...params.style,
+        ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+        strokeWidth: 3
+      }
+    }, eds))
     if (connected && !setModeFlag) {
       sendMessage({
         type: "edge_add",
@@ -512,7 +565,7 @@ const FlowCanvas = ({ roomId }) => {
         default:
           console.error("Unauthorized Access")
       }
-  }, [dispatch, setLocalEdges, setModeFlag, connected, sendMessage]);
+  }, [dispatch, setLocalEdges, setModeFlag, turboFlag, defaultEdgeColor, connected, sendMessage]);
 
   /**
    * 노드 삭제 이후 동작 : 
@@ -606,10 +659,9 @@ const FlowCanvas = ({ roomId }) => {
    */
   const onAdd = useCallback(() => {
     const id = getNodeId();
-    const prevNode = getNodes()?.find(node => node.id === prevNodeId);
     const screen = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
-    const x = typeof prevNode?.position?.x === 'number' ? prevNode.position.x + 20 : screen.x - getNodes()[0] ? getNodes()[0].measured.width / 2 : 0;
-    const y = typeof prevNode?.position?.x === 'number' ? prevNode.position.y + 20 : screen.y - getNodes()[0] ? getNodes()[0].measured.height / 2 : 0;
+    const x = screen.x - 25;
+    const y = screen.y - 25;
     const newNode = {
       id,
       type: 'custom',
@@ -632,8 +684,7 @@ const FlowCanvas = ({ roomId }) => {
         }
       });
     }
-    setPrevNodeId(id);
-  }, [setLocalNodes, nodes, defaultNodeValue, getNodes, screenToFlowPosition, prevNodeId, connected, sendMessage, setModeFlag]);
+  }, [setLocalNodes, nodes, defaultNodeValue, screenToFlowPosition, connected, sendMessage, setModeFlag]);
 
   /**
    * settings에서 설정한 값 반환
@@ -747,7 +798,7 @@ const FlowCanvas = ({ roomId }) => {
         settingNodes(defaultNodeValue, defaultNodeColor, defaultEdgeColor));
     setLocalEdges(
       turboFlag ?
-        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag).filter(edge => !['Notice->7', '7->nodecolor', 'Notice->10', '10->edgecolor'].includes(edge.id)) :
+        settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag).filter(edge => !['xy-edge__Notice-7', 'xy-edge__7-nodecolor', 'xy-edge__Notice-10', 'xy-edge__10-edgecolor'].includes(edge.id)) :
         settingEdges(defaultNodeAlign, sortDirectionFlag, autoFitViewFlag, mapFlag, cycleValidateFlag, zoomOutBlurFlag, turboFlag));
   }, [
     dispatch,
@@ -785,19 +836,17 @@ const FlowCanvas = ({ roomId }) => {
       if (flow) {
         const { x, y, zoom } = flow.viewport || { x: 0, y: 0, zoom: 1 };
         setLocalNodes(flow.nodes || []);
-        if (!turboFlag && flow.edges) {
-          const prevEdges = flow.edges.map((edge) => {
-            return {
-              ...edge,
-              style: {
-                ...edge.style,
-                stroke: rgbastr2hex(defaultEdgeColor),
-              }
+        const prevEdges = flow.edges.map((edge) => {
+          return {
+            ...edge,
+            style: {
+              ...edge.style,
+              ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+              strokeWidth: 3
             }
-          })
-          setLocalEdges(prevEdges || []);
-        } else
-          setLocalEdges(flow.edges);
+          }
+        })
+        setLocalEdges(prevEdges || []);
         setViewport({ x, y, zoom });
       }
     };
@@ -815,13 +864,13 @@ const FlowCanvas = ({ roomId }) => {
       settings: flowSettings(),
     }
     const encoded = encodeFlowToUrlParam(data);
-    const url = `${window.location.origin}/StarryFlow/map/local#data=${encoded}`;
+    const url = `${window.location.origin}/StarryFlow/map/${hostFlag ? roomId : 'local'}#data=${encoded}`;
 
     navigator.clipboard.writeText(url)
       .catch(err => {
         console.error('Failed to copy:', err);
       });
-  }, [rfInstance, flowSettings])
+  }, [rfInstance, flowSettings, roomId, hostFlag])
 
   /**
    * [Dial] 현재 flow의 모든 데이터 제거
@@ -829,8 +878,14 @@ const FlowCanvas = ({ roomId }) => {
   const onReset = useCallback(() => {
     setLocalEdges([]);
     setLocalNodes([]);
+    if (connected && !setModeFlag) {
+      sendMessage({
+        type: "flow_clear",
+        payload: {},
+      });
+    }
     dispatch(clearSelectedNode());
-  }, [dispatch, setLocalEdges, setLocalNodes])
+  }, [dispatch, setLocalEdges, setLocalNodes, connected, setModeFlag, sendMessage])
 
   /**
    * [socket] node move event handler
@@ -863,6 +918,61 @@ const FlowCanvas = ({ roomId }) => {
     }
   }, [connected, sendMessage, setModeFlag])
 
+
+  const onConnectEnd = useCallback(
+    (event, connectionState) => {
+      if (!connectionState.isValid) {
+        const id = getNodeId();
+        const { clientX, clientY } =
+          'changedTouches' in event ? event.changedTouches[0] : event;
+        const edgeSource = connectionState.fromNode.id;
+        const edgeId = `xy-edge__${edgeSource}-${id}`
+
+        const newNode = {
+          id,
+          type: 'custom',
+          data: { label: `${defaultNodeValue}` },
+          position: screenToFlowPosition({
+            x: clientX,
+            y: clientY,
+          }),
+        };
+        const newEdge = {
+          id: edgeId,
+          source: edgeSource,
+          target: id,
+          style: {
+            ...(turboFlag ? { stroke: `url(#edge-gradient)`, strokeOpacity: 0.75 } : { stroke: rgbastr2hex(defaultEdgeColor) }),
+            strokeWidth: 3
+          }
+        }
+
+        setLocalNodes((prevNodes) => [...prevNodes, newNode]);
+        setLocalEdges((prevEdges) => [...prevEdges, newEdge])
+        if (connected && !setModeFlag) {
+          sendMessage({
+            type: "node_add",
+            payload: {
+              id: id,
+              position: screenToFlowPosition({
+                x: clientX,
+                y: clientY,
+              }),
+            }
+          });
+          sendMessage({
+            type: "edge_add",
+            payload: {
+              id: edgeId,
+              source: edgeSource,
+              target: id,
+            }
+          });
+        }
+      }
+    },
+    [setLocalNodes, setLocalEdges, screenToFlowPosition, connected, setModeFlag, sendMessage, turboFlag, defaultNodeValue, defaultEdgeColor],
+  );
   return (
     <div className={`wrapper ${turboFlag ? 'turbo' : ''}`}>
       <ReactFlow
@@ -876,6 +986,7 @@ const FlowCanvas = ({ roomId }) => {
         connectionLineStyle={connectionLineStyle} // connect 라인 스타일
         defaultEdgeOptions={defaultEdgeOptions} // edge 기본설정
         onConnect={onConnect} // 연결
+        onConnectEnd={onConnectEnd} // 작업중
         onNodesChange={onNodesChange} // 노드 수정
         onNodeClick={onNodeClick} // 노드클릭
         onPaneClick={onPaneClick} // 노드외 클릭
@@ -890,7 +1001,7 @@ const FlowCanvas = ({ roomId }) => {
         fitView
       >
         {!(setModeFlag && !(id === 'value' || id === 'nodecolor' || id === 'edgecolor')) && existSelectedNode && (<NodePanel />)}
-        {!setModeFlag && mapFlag && (<MiniMap nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
+        {!setModeFlag && mapFlag && (<MiniMap zoomable pannable nodeStrokeWidth={3} position={'top-right'} nodeColor={'#b0b0b0'} />)}
         <svg>
           <defs>
             <linearGradient id="edge-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
@@ -938,9 +1049,15 @@ const FlowCanvas = ({ roomId }) => {
         goCanvas={handleSaveSettings}
         onShare={urlCopy}
         onReset={onReset}
+        onGuide={openGuide}
         socketON={socketFlag}
         hostFlag={hostFlag}
       />
+      {(!socketFlag && roomId !== 'local') && (
+        <div className="overlay">
+          connection lost
+        </div>
+      )}
     </div>
   );
 };

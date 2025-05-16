@@ -15,6 +15,8 @@ ALLOWED_TYPES = {
     "edge_delete",
     "elk_layout",
     "edge_add",
+    "flow_clear",
+    "batch_update_host",
 }
 
 MAX_CONNECTIONS_PER_IP = 100 # 기존 3 / 테스트용 100
@@ -177,6 +179,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             except Exception:
                 logging.warning(f"[INVALID] Malformed message from {ip}")
                 await websocket.close(code=4003)
+                manager.disconnect(room_id, websocket) # close만 하고 나가는바람에 host가 좀비가 되어서 추가함
                 break
 
             
@@ -232,7 +235,17 @@ def log_optimizer(tempData: dict, room_id: str) -> bool:
             if x["type"] == "node_move" and x["payload"]["id"] == payload_id:
                 del room_logs[room_id][idx]
                 break
+    
+    elif data_type == "flow_clear":
+        room_logs[room_id] = []
+        delete_flag = True
 
+    elif data_type == "batch_update_host":
+        if not len(room_logs[room_id]):
+            room_logs[room_id].extend(tempData["payload"]["nodes"])
+            room_logs[room_id].extend(tempData["payload"]["edges"])
+        delete_flag = True
+    print(room_logs[room_id])
     return delete_flag
 
 def is_admin(token: str):

@@ -10,6 +10,8 @@
  2. 메모를 로컬 스토리지에 저장
  3. ~~추후 가능하다면 클라우드에 저장~~ -> URL로 변경
  4. ~~추후 가능하다면 메모를 ai모델을 사용해서 요약 및 검색 기능까지...~~ -> 소켓 통신을 이용한 양방향 협업 기능
+<details>
+  <summary>completed develop task</summary>
 ## develop task - complete
  - map에 관한 아이디어
    - 디자인은 밤하늘 컨셉으로
@@ -187,6 +189,38 @@
           }
         }
       ```
+     - 맵 초기화 - "flow_clear"
+      ```JSON
+        {
+          type: "flow_clear"
+        }
+      ```
+     - 호스트 초기화 - "batch_update_host"
+      ``` JSON
+        {
+          type: "batch_update_host",
+          payload: {
+            nodes: {
+              {
+                id,
+                position: {
+                  x,
+                  y,
+                },
+              },
+              ...
+            },
+            edges: {
+              {
+                id,
+                source,
+                target,
+              },
+              ...
+            }, 
+          }
+        }
+      ```
  - 보안관련 자료수집
  - 제작중인 기능
    - ~~노드 Position (x, y) - "node_move"~~ -> 완료
@@ -233,7 +267,7 @@
    - ~~해결방안 : 사전 규약에 batch_update 신설~~ -> 완료
      - 서버 설정 완료
      - ~~onNodesDelete는 그만 놔주고 직접 만들어야겠다~~ -> 안놔주고 onNodesDelete를 재사용성 있게 수정함
-## develop task - progress
+ - develop task가 너무 길어져서 summary로 단축
  - 2차 사용성테스트
    - ~~connect가 끊겼을 때 알림이 콘솔에서밖에 없음~~
    - ~~socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)~~
@@ -241,9 +275,42 @@
    - ~~node delete시 null.find하는 문제(정확히는 delete했을 때 broadcast시, null이 되는 문제)~~
    - ~~guest 변화가 서버 host기록에 저장되지않음. (host작성 -> guest작성 -> 새로고침 -> guest는 작성이전상태)~~
    - ~~host여부를 보여줬으면 좋겠는데~~ -> dial 색상으로 완료
-   - next
+   - ~~색상으로 완료하는게 맞음? host 표기좀~~ -> 호스트용 아이콘 생성
+   - ~~왜 올때마다 connection lost임 local에서도~~ -> 첫입장 플래그로 false초기화시 문제 해결
+   - ~~clearFlow까먹었네~~
+     - clearFlow를 allow_type에 안넣어놓고 왜 서버가 꺼지지 이러고있었네
+     - 하는김에 호스트 연결종료되면 오버레이로 덮어씌움
+     - 이거덕분에 타입 다른 메세지로 인한 ValueError시에 발생하는 서버 오류 해결함
+   - ~~fitView는 어쩔까~~ -> 데이터에 영향이 없으니 제외
+   - ~~help가 없다 튜토리얼 제작하기(무조건만들것)~~ -> 완성
+   - connection lost가 로컬 상태일때 사라지지 않는 버그 수정
+   - host의 색상을 조금 더 밝게 수정함
+   - ~~가이드에 줌아웃, 끌어내리기 설명 추가하기~~ -> 테스트해보니 노드클릭하다보면 자연스럽게 알게되는 동작
+   - ~~turbo에 컬러 적용이 안되는 버그 재발생~~ -> connectLine 안고친거 포함해서 완료
+   - ~~가이드 화살표말고 그냥 클릭하면 넘어가기~~ -> 완료
+   - turbo의 테두리를 조금 둥글게 수정함
+   - ~~local에 host가있네?~~ -> 수정완료
+   - 새 노드 생성위치 화면 중앙으로 변경
+   - ~~connectEnd 부활시키기...~~ -> 프로젝트를 이정도 진행했더니 이제 바로 만들 수 있게됨
+   - ~~host가 데이터갖고오면 데이터 open할 수 있는 상태로 만들기...~~ -> 완료
+     - 데이터 크기 확인 -> ip 확인 -> 타입 확인 -> 기록저장하고 클라이언트로 허용여부 던지기
+     - 현재 모두허용인데 roomId있을때 host일경우 서버로 던지기(근데 클라이언트로 해야할듯)
+     - host 업데이트용 데이터 사전 규악 batch_update_host 추가
+   - ~~다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기~~
+   - flow를 정리할 수 있게 하면 어떨까? UI적 정리 말고 데이터 정리로
+     - 연결된 노드가 많을수록 밝아지는 UI도 좋아보인다
+     - 연결된 노드의 정의는 leaf의 합계로?
+     - 이거는 edge만 조사하면된다. regex로 걸러내서 빈도가 많은 노드 검출 가능
+     - 통계는 서버에서 하십시오 내용이 많을거같음
+     - 어떤 통계를 할지는 다음 테스트에 하자. 아이디어없이 시간끄는느낌?
+ - ~~발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음~~ 해결완료
+ - ~~compress 서버 전송 테스트하기~~
+ - ~~aws ec2 서버 구축하기~~
+ - ~~oracle cloud 정상화되면 다시 구동할생각도~~
+ - oracle로 서버 구축완료
+</details>
+
+## develop task - progress
+ - 발동 조건은 찾지 못했는데 게스트 입장시 getIncomer에서 id에러 있음
 ## develop task - wait
- - aws ec2 서버 구축하기
- - oracle cloud 정상화되면 다시 구동할생각도
- - compress 서버 전송 테스트하기
  - redis 사용예정
