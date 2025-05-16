@@ -12,6 +12,7 @@
  4. ~~추후 가능하다면 메모를 ai모델을 사용해서 요약 및 검색 기능까지...~~ -> 소켓 통신을 이용한 양방향 협업 기능
 <details>
   <summary>completed develop task</summary>
+
 ## develop task - complete
  - map에 관한 아이디어
    - 디자인은 밤하늘 컨셉으로
