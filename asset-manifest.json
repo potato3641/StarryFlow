@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/StarryFlow/static/css/main.3010a969.css",
-    "main.js": "/StarryFlow/static/js/main.40f33268.js",
+    "main.css": "/StarryFlow/static/css/main.a257940b.css",
+    "main.js": "/StarryFlow/static/js/main.b074ac89.js",
     "static/js/453.6780c37c.chunk.js": "/StarryFlow/static/js/453.6780c37c.chunk.js",
     "index.html": "/StarryFlow/index.html",
-    "main.3010a969.css.map": "/StarryFlow/static/css/main.3010a969.css.map",
-    "main.40f33268.js.map": "/StarryFlow/static/js/main.40f33268.js.map",
+    "main.a257940b.css.map": "/StarryFlow/static/css/main.a257940b.css.map",
+    "main.b074ac89.js.map": "/StarryFlow/static/js/main.b074ac89.js.map",
     "453.6780c37c.chunk.js.map": "/StarryFlow/static/js/453.6780c37c.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.3010a969.css",
-    "static/js/main.40f33268.js"
+    "static/css/main.a257940b.css",
+    "static/js/main.b074ac89.js"
   ]
 }
