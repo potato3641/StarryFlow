@@ -7,7 +7,7 @@ export function useWebSocket(roomId, onMessage) {
   useEffect(() => {
     if (!roomId || roomId === 'local') return;
 
-    const ws = new WebSocket(`ws://localhost:8000/ws/${roomId}`);
+    const ws = new WebSocket(`wss://sbws001.starryflow.xyz/api/v1/ws/${roomId}`);
     socketRef.current = ws;
 
     ws.onopen = () => {
