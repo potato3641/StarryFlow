@@ -1,9 +1,9 @@
-# :sparkles: [StarryFlow](https://potato3641.github.io/StarryFlow) (2025.04.30 ~ 2025.05.22)
+# :sparkles: [StarryFlow](https://potato3641.github.io/StarryFlow/#/) (2025.04.30 ~ 2025.05.22)
 
 > "별처럼 흩어진 생각을 하나로 잇다"  
 아이디어를 마인드맵 방식으로 정리하고, 실시간 협업까지 가능한 웹 메모장
 
-[프로젝트 바로 사용하러가기(배포중)](https://potato3641.github.io/StarryFlow)
+[프로젝트 바로 사용하러가기(배포중)](https://potato3641.github.io/StarryFlow/#/)
 
 ### :hammer_and_wrench: **기술 스택**
   - React
@@ -392,6 +392,10 @@
 ## develop task - progress
   - 라이브 상황에서 hostFlag가 간혹 제대로 작동하지 않음
     - 브라우저가 최초로 접속하면 hostFlag가 동작하지 않음을 확인함
+    - HashRouter로 변경
+    - Router 문제 수정중 - urlCopy 고장남
+    - 원인파악 : host인 유저에게 you_are_host라는 메세지를 날려주는데, 짧은 시간 내에 접속한 두 사용자에게 모두 you_are_host를 날리고, 이 중에서 늦게 접속한 사람이 host가 되고 처음 접속한 사람은 host로 표시되지만 host가 아님
+    - 해결방안1 : async lock을 이용해 중복 you_are_host 방지
 </details>
 
 <details>
