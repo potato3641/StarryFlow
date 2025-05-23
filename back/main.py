@@ -30,7 +30,8 @@ message_timestamps = defaultdict(lambda: deque())
 ip_violations = defaultdict(int)  # IP별 위반 횟수
 banned_ips = load_ban_list()
 connection_logs = []
-room_hosts = {}
+room_hosts: dict[str, WebSocket] = {}
+room_locks: dict[str, asyncio.Lock] = {}
 room_logs = defaultdict(list)
 app = FastAPI()
 
@@ -95,11 +96,19 @@ class ConnectionManager:
                         pass
                 del self.active_rooms[room_id]
                 del self.hosts[room_id]
+                if room_id in room_hosts:
+                    del room_hosts[room_id]
+                if room_id in room_locks:
+                    del room_locks[room_id]
                 if room_id in self.room_data:
                     del self.room_data[room_id]
                 logging.info(f"[ROOM CLOSED] Host left room {room_id}")
             elif not self.active_rooms[room_id]:
                 del self.active_rooms[room_id]
+                if room_id in room_hosts:
+                    del room_hosts[room_id]
+                if room_id in room_locks:
+                    del room_locks[room_id]
         if websocket in message_timestamps:
             del message_timestamps[websocket]
 
@@ -125,11 +134,16 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         return
     
     is_host = False
-    if room_id not in room_hosts:
-        room_hosts[room_id] = websocket
-        is_host = True
-        print(f"[HOST ASSIGNED] {ip} is host of room {room_id}")
-        await websocket.send_text(json.dumps({'type': 'you_are_host', 'roomId': room_id}))
+
+    if room_id not in room_locks:
+        room_locks[room_id] = asyncio.Lock()
+
+    async with room_locks[room_id]:
+        if room_id not in room_hosts:
+            room_hosts[room_id] = websocket
+            is_host = True
+            print(f"[HOST ASSIGNED] {ip} is host of room {room_id}")
+            await websocket.send_text(json.dumps({'type': 'you_are_host', 'roomId': room_id}))
 
     if not is_host and room_logs[room_id]:
         try:

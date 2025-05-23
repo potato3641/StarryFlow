@@ -864,7 +864,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       settings: flowSettings(),
     }
     const encoded = encodeFlowToUrlParam(data);
-    const url = `${window.location.origin}/StarryFlow/map/${hostFlag ? roomId : 'local'}#data=${encoded}`;
+    const url = `${window.location.origin}/StarryFlow/#/map/${hostFlag ? roomId : 'local'}#data=${encoded}`;
 
     navigator.clipboard.writeText(url)
       .catch(err => {
