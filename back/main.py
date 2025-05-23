@@ -31,7 +31,9 @@ ip_violations = defaultdict(int)  # IP별 위반 횟수
 banned_ips = load_ban_list()
 connection_logs = []
 room_hosts: dict[str, WebSocket] = {}
-room_locks: dict[str, asyncio.Lock] = {}
+room_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+room_locks_global = asyncio.Lock()
+host_notified: dict[str, bool] = {}
 room_logs = defaultdict(list)
 app = FastAPI()
 
@@ -61,12 +63,12 @@ class ConnectionManager:
         ip = websocket.client.host
 
         if ip in banned_ips:
-            logging.warning(f"[BANNED] Connection attempt from banned IP: {ip}")
+            logging.warning(f"BAN) Con banned {ip}")
             await websocket.close(code=4000)
             return False
         
         if ip_connection_counts[ip] >= MAX_CONNECTIONS_PER_IP:
-            logging.warning(f"[LIMIT] Too many connections from IP: {ip}")
+            logging.warning(f"LIM) many con from {ip}")
             await websocket.close(code=4000)
             return False
         
@@ -75,7 +77,7 @@ class ConnectionManager:
         if room_id not in self.active_rooms:
             self.hosts[room_id] = websocket
         self.active_rooms.setdefault(room_id, []).append(websocket)
-        logging.info(f"[CONNECT] IP {ip} joined room {room_id}")
+        logging.info(f"CON) IP {ip} joined {room_id}")
         
         if room_id in self.room_data and websocket != self.hosts[room_id]:
             await websocket.send_text(self.room_data[room_id])
@@ -100,19 +102,23 @@ class ConnectionManager:
                     del room_hosts[room_id]
                 if room_id in room_locks:
                     del room_locks[room_id]
+                if room_id in host_notified:
+                    del host_notified[room_id]
                 if room_id in self.room_data:
                     del self.room_data[room_id]
-                logging.info(f"[ROOM CLOSED] Host left room {room_id}")
+                logging.info(f"CLOSE) Host left {room_id}")
             elif not self.active_rooms[room_id]:
                 del self.active_rooms[room_id]
                 if room_id in room_hosts:
                     del room_hosts[room_id]
                 if room_id in room_locks:
                     del room_locks[room_id]
+                if room_id in host_notified:
+                    del host_notified[room_id]
         if websocket in message_timestamps:
             del message_timestamps[websocket]
 
-        logging.info(f"[DISCONNECT] IP {ip} left room {room_id}")
+        logging.info(f"DISCON) {ip} left {room_id}")
 
     async def broadcast(self, room_id: str, message: str, sender: WebSocket = None):
         for connection in self.active_rooms.get(room_id, []):
@@ -129,21 +135,25 @@ manager = ConnectionManager()
 async def websocket_endpoint(websocket: WebSocket, room_id: str):
     ip = websocket.client.host
     
-    connected = await manager.connect(room_id, websocket)
-    if not connected:
-        return
-    
-    is_host = False
-
-    if room_id not in room_locks:
-        room_locks[room_id] = asyncio.Lock()
+    async with room_locks_global:
+        if room_id not in room_locks:
+            room_locks[room_id] = asyncio.Lock()
 
     async with room_locks[room_id]:
+        connected = await manager.connect(room_id, websocket)
+        if not connected:
+            return
+        
+        is_host = False
         if room_id not in room_hosts:
-            room_hosts[room_id] = websocket
+            room_hosts[room_id] = id(websocket)
+            host_notified[room_id] = False
             is_host = True
-            print(f"[HOST ASSIGNED] {ip} is host of room {room_id}")
-            await websocket.send_text(json.dumps({'type': 'you_are_host', 'roomId': room_id}))
+            logging.info(f"HOST ASSIG) {ip} of room {room_id}")
+
+    if room_hosts.get(room_id) == id(websocket) and not host_notified.get(room_id, False):
+        await websocket.send_text(json.dumps({'type': 'you_are_host', 'roomId': room_id}))
+        host_notified[room_id] = True
 
     if not is_host and room_logs[room_id]:
         try:
@@ -153,7 +163,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 "payload": payload,
             }
             await websocket.send_text(json.dumps(batch_message))
-            print(f"[SYNC] Sent {len(room_logs[room_id])} logs to {ip}")
+            # print(f"[SYNC] Sent {len(room_logs[room_id])} logs to {ip}")
         except:
             pass
     
@@ -162,7 +172,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
             data = await websocket.receive_text()
 
             if len(data) > MAX_MESSAGE_SIZE:
-                logging.warning(f"[SIZE] Message too large from {ip}")
+                logging.warning(f"SIZE) too large from {ip}")
                 await websocket.close(code=4001)
                 break
 
@@ -174,11 +184,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 timestamps.popleft()
 
             if len(timestamps) > MAX_MESSAGES_PER_SECOND:
-                logging.warning(f"[RATE LIMIT] {ip} exceeded message rate")
+                logging.warning(f"LIM) {ip} exceeded message rate")
                 ip_violations[ip] += 1
                 if ip_violations[ip] >= BAN_THRESHOLD:
                     banned_ips.add(ip)
-                    logging.error(f"[BAN] IP {ip} has been banned")
+                    logging.error(f"BAN) {ip} banned")
                 await websocket.close(code=4002)
                 break
 
@@ -191,7 +201,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
                 if "payload" not in msg:
                     raise ValueError("Missing payload")
             except Exception:
-                logging.warning(f"[INVALID] Malformed message from {ip}")
+                logging.warning(f"INV) Malformed msg from {ip}")
                 await websocket.close(code=4003)
                 manager.disconnect(room_id, websocket) # close만 하고 나가는바람에 host가 좀비가 되어서 추가함
                 break
@@ -208,7 +218,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str):
         manager.disconnect(room_id, websocket)
         
         if is_host:
-            print(f"[HOST LEFT] Closing all connections in room {room_id}")
+            logging.info(f"left) Closing all in {room_id}")
             for ws in manager.active_rooms.get(room_id, []):
                 if ws != websocket:
                     asyncio.create_task(ws.close(code=4004))
@@ -259,7 +269,6 @@ def log_optimizer(tempData: dict, room_id: str) -> bool:
             room_logs[room_id].extend(tempData["payload"]["nodes"])
             room_logs[room_id].extend(tempData["payload"]["edges"])
         delete_flag = True
-    print(room_logs[room_id])
     return delete_flag
 
 def is_admin(token: str):
