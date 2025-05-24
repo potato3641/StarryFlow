@@ -9,12 +9,8 @@
     const redirectToApp = () => {
       const currentPath = window.location.pathname + window.location.search + window.location.hash;
       const origin = window.location.origin;
-      if (!currentPath.startsWith('/StarryFlow')) {
-        const encodedPath = encodeURIComponent(currentPath);
-        window.location.replace(`${origin}/StarryFlow/?redirect=${encodedPath}`);
-      } else {
-        window.location.replace(`${origin}/StarryFlow/`);
-      }
+      const encodedPath = encodeURIComponent(currentPath);
+      window.location.replace(`${origin}/StarryFlow/?redirect=${encodedPath}`);
     };
     window.onload = redirectToApp;
   </script>
