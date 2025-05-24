@@ -4,13 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>404</title>
+  <title>404 Redirecting...</title>
   <script>
     const redirectToApp = () => {
       const currentPath = window.location.pathname;
       const origin = window.location.origin;
       if (!currentPath.startsWith('/StarryFlow')) {
-        window.location.replace(`${origin}/StarryFlow${currentPath}`);
+        window.location.replace(`${origin}/StarryFlow${currentPath}${window.location.search}${window.location.hash}`);
+      } else {
+        window.location.replace(`${origin}/StarryFlow/`);
       }
     };
     window.onload = redirectToApp;
