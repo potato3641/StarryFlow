@@ -7,10 +7,13 @@
   <title>404</title>
   <script>
     const redirectToApp = () => {
-      const currentPath = window.location.pathname + window.location.search + window.location.hash;
+      const currentPath = window.location.pathname;
       const origin = window.location.origin;
-      const encodedPath = encodeURIComponent(currentPath);
-      window.location.replace(`${origin}/StarryFlow/?redirect=${encodedPath}`);
+      if (!currentPath.startsWith('/StarryFlow')) {
+        window.location.replace(`${origin}/StarryFlow${currentPath}`);
+      } else {
+        window.location.replace(`${origin}/StarryFlow/`);
+      }
     };
     window.onload = redirectToApp;
   </script>
