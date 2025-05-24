@@ -864,13 +864,13 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       settings: flowSettings(),
     }
     const encoded = encodeFlowToUrlParam(data);
-    const url = `${window.location.origin}/StarryFlow/#/map/${hostFlag ? roomId : 'local'}#data=${encoded}`;
+    const url = `${window.location.origin}/StarryFlow/map/${hostFlag ? roomId : 'local'}#data=${encoded}`;
 
     navigator.clipboard.writeText(url)
       .catch(err => {
         console.error('Failed to copy:', err);
       });
-  }, [rfInstance, flowSettings, roomId, hostFlag])
+  }, [rfInstance, flowSettings])
 
   /**
    * [Dial] 현재 flow의 모든 데이터 제거

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MapPage from './pages/MapPage';
 import EntryPage from './pages/EntryPage';
 
@@ -10,7 +10,7 @@ function App() {
     }
   }, [])
   return (
-    <Router>
+    <Router basename={process.env.PUBLIC_URL}>
       <Routes>
         <Route path="/" element={<Navigate to="/entry" replace />} />
         <Route path="/map/:roomId" element={<MapPage />} />
@@ -19,5 +19,4 @@ function App() {
     </Router >
   );
 }
-console.log("Router 감싸는 basename:", window.location.pathname, window.location.hash);
 export default App;
