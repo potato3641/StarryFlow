@@ -396,16 +396,31 @@
     - 해결방안1 : id(websocket)으로 탭도 구분하게 함
     - 해결방안2 : global lock으로 async lock의 이중 락 설정 방지
     - urlCopy는 live Router문제로 다시 해결해야함
+  - urlCopy 문제
+    - 복사된 URL을 넣으면 데이터가 입력이 안됨 -> 해결
+    - 복사된 URL을 넣으면 데이터 입력과 host설정은 되는데 duplicate오류가 발생함
+    - 데이터 복사 URL을 비활성화하고 문제 해결할것
+  - disconnect가 제대로 되지 않아서 데이터가 남는 문제 발생 -> 헤결
+  - 재발생한 host assign 중복문제에 대한 해결
+    - urlCopy/router/host assing/disconnect 모두 원인이 동일해서 browserRouter로 원복
+    - 데이터 삭제시점을 disconnect할 때로 통일
+    - lock을 connect에서 직접 관리하도록 클래스 변수로 편입하여 처리(endpoint에서는 뭔짓을 해도 안된다)
+      - 왜 lock으로 처리를 못했나?
+      - 외부 전역변수 room_locks로는 connect을 받을때 await으로 비동기상태였기 때문에 해당 "상태"에서 room_locks은 변하지 않은 "상태"임 그래서 connection이 lock이 걸리지 않았기 때문에 둘 다 True인 상태로 들어온것
+    - lock 상태에서도 동일 문제가 반복되어 로그를 찍어보니 동일한 락을 갖고 내부 함수를 실행중인 것을 발견
+    - global lock을 connection 객체 내에 만들어서 connection 객체 전체에 lock을 걸고 실행하게함
+    - 그래도 여전한 문제
+    - connectionManager 생성이 여러번이면 그럴 수 있다는 말에 로그찍어봄
+    - 정확히 3번생성됨 어... 3번? gunicorn 워커 3갠데
+    - 소켓은 워커 1개 싱글 프로세스로 하십시오...
+    - 이거 예전 프로젝트에서도 있었던건데 그땐 ingress로 동일연결은 동일워커로 보내줘서 됐던건데 그걸 까먹었네
 </details>
 
 <details>
   <summary>progress develop note</summary>
   
 ## develop task - progress
-  - urlCopy 문제
-    - 복사된 URL을 넣으면 데이터가 입력이 안됨 -> 해결
-    - 복사된 URL을 넣으면 데이터 입력과 host설정은 되는데 duplicate오류가 발생함
-    - 데이터 복사 URL을 비활성화하고 문제 해결할것
+
 </details>
 
 <details>
