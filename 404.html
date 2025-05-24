@@ -11,8 +11,6 @@
       const origin = window.location.origin;
       if (!currentPath.startsWith('/StarryFlow')) {
         window.location.replace(`${origin}/StarryFlow${currentPath}`);
-      } else {
-        window.location.replace(`${origin}/StarryFlow/`);
       }
     };
     window.onload = redirectToApp;
