@@ -2,10 +2,18 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from ban_storage import load_ban_list, save_ban_list
 from collections import defaultdict, deque
+from dotenv import load_dotenv
 import json
 import time
 import logging
 import asyncio
+import os
+
+load_dotenv()
+
+MAX_CONNECTIONS_PER_IP = os.environ.get('MAX_CONNECTIONS_PER_IP')
+ROOT_PATH = os.environ.get('ROOT_PATH')
+ALLOW_ORIGIN = os.environ.get('ALLOW_ORIGIN')
 
 ALLOWED_TYPES = {
     "node_move",
@@ -19,7 +27,6 @@ ALLOWED_TYPES = {
     "batch_update_host",
 }
 
-MAX_CONNECTIONS_PER_IP = 100 # 기존 3 / 테스트용 100
 MAX_MESSAGE_SIZE = 10_000  # 10KB
 MAX_MESSAGES_PER_SECOND = 8
 WINDOW_SECONDS = 1
@@ -30,10 +37,6 @@ message_timestamps = defaultdict(lambda: deque())
 ip_violations = defaultdict(int)  # IP별 위반 횟수
 banned_ips = load_ban_list()
 connection_logs = []
-room_hosts: dict[str, WebSocket] = {}
-room_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
-room_locks_global = asyncio.Lock()
-host_notified: dict[str, bool] = {}
 room_logs = defaultdict(list)
 
 logging.basicConfig(
@@ -41,8 +44,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
 )
-
-ADMIN_TOKEN = "secret_admin_token"
 
 class ConnectionManager:
     def __init__(self):
@@ -135,11 +136,11 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-app = FastAPI()
+app = FastAPI(root_path=ROOT_PATH if ROOT_PATH else None)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 모든 출처에서의 요청을 허용
+    allow_origins=[ALLOW_ORIGIN],  # 모든 출처에서의 요청을 허용
     allow_credentials=True,
     allow_methods=["*"],  # 모든 HTTP 메서드 허용
     allow_headers=["*"],  # 모든 헤더 허용
@@ -265,21 +266,14 @@ def log_optimizer(tempData: dict, room_id: str) -> bool:
         delete_flag = True
     return delete_flag
 
-def is_admin(token: str):
-    return token == ADMIN_TOKEN
+# @app.get("/admin/ban-list")
+# def get_ban_list(token: str):
+#     return {"banned_ips": list(banned_ips)}
 
-@app.get("/admin/ban-list")
-def get_ban_list(token: str):
-    if not is_admin(token):
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    return {"banned_ips": list(banned_ips)}
+# @app.get("/admin/logs")
+# def get_logs(token: str):
+#     return {"logs": connection_logs[-100:]}
 
-@app.get("/admin/logs")
-def get_logs(token: str):
-    if not is_admin(token):
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    return {"logs": connection_logs[-100:]}  # 마지막 100개 로그 반환
-
-@app.get("/debug/connections")
-def debug_connections():
-    return dict(ip_connection_counts)
+# @app.get("/debug/connections")
+# def debug_connections():
+#     return dict(ip_connection_counts)

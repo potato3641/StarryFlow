@@ -1,9 +1,9 @@
-# :sparkles: [StarryFlow](https://potato3641.github.io/StarryFlow/#/) (2025.04.30 ~ 2025.05.22)
+# :sparkles: [StarryFlow](https://potato3641.github.io/StarryFlow/) (2025.04.30 ~ 2025.05.22)
 
 > "별처럼 흩어진 생각을 하나로 잇다"  
 아이디어를 마인드맵 방식으로 정리하고, 실시간 협업까지 가능한 웹 메모장
 
-[프로젝트 바로 사용하러가기(배포중)](https://potato3641.github.io/StarryFlow/#/)
+[프로젝트 바로 사용하러가기(배포중)](https://potato3641.github.io/StarryFlow/)
 
 ### :hammer_and_wrench: **기술 스택**
   - React
@@ -80,6 +80,10 @@
   - 사용기술 정리
   - **백엔드의 프로덕션과 라이브 코드는 다를 수 있습니다.**
 
+### :warning: 3차 사용자 경험 피드백 (25.05.23 ~ 25.05.27)
+  - 라이브 환경에서 발생하는 버그 수정
+  - 파이프라인을 위한 로컬/서버별 env 추가
+
 <details open>
   <summary>completed develop note</summary>
 
@@ -97,9 +101,11 @@
      - 공유(hex변환 page)
      - share는 base64거쳐서, 서버로는 compress만
    - drag div 만들어서 직접 연결하기 -> react flow에 스타일 붙이기로 변경
+
   - 작업중... darge sort : edge handle problem -> elkjs로 변경됨
   - edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다 -> 완료
   - redux하다가 꼬이고 내가 원하는 커스텀 상태에서 handle 수직/수평이 결국 안되는거에 화나서 그냥 connectedLine으로 변경 결정 -> 완료
+
   ### selectedNode작업(redux 값 변화)
    - 노드클릭(FlowCanvas/onNodeClick)
      - setSelectedNode (empty -> id)
@@ -124,6 +130,7 @@
      - clearsLabel (newLabel -> empty)
      - clearsFontSize (newFontSize -> empty)
    - 추후 추가될 노드 수정작업은 위에 추가해서 정리하는걸로
+
   - Node-Line-Edge 구성 및 노드 수정 및 연동 기능 완료
   - modification function에 width height도 넣어보고싶은데 -> 취소 : relative로 변경
   - resizer 좀만 더 확인해보기... -> relative로 변경하며 확인할 필요가 없어짐
@@ -136,6 +143,7 @@
   - 컨셉컨셉 하다보니 이거 프로젝트 제목 컨셉에 안맞는거같은데 프로젝트명을 바꿔야겠는데 편의성을 위해 일단 놔두고 정식명칭을 정해봐야겠음 -> starry flow
   - develop note 점점 task목록같아지는데 이거 분할해서 할까?
   - onadd speeddial 클릭문제 해결(icon range)
+
   ### settings에 들어갈 옵션 완성하기
    - minimap on/off flag -> 기능완료 mapFlag
    - node 왼쪽정렬/가운데정렬/오른쪽정렬 (선택박스) -> 기능완료 defaultNodeAlign
@@ -145,6 +153,7 @@
    - cycle 형성 방제 on/off flag -> 기능완료 cycleValidateFlag
    - node default value 변경 -> 기능완료 defaultNodeValue
    - blur node value at min-zoom flag -> 기능완료 zoomOutBlurFlag
+
   - 개편이 필요한것 : connectLine이 너무 얇다 클릭하기 힘들어 -> width 2로 늘렸으나 3을 고려해봐야할듯
   - Setting을 모달로 하기보다 기왕 FlowCanvas 만든거 이거 이용해서 fixed nodes갖고 값 바꾸라고 하면 좋을거같다
     - Settings Elk -> 완료
@@ -157,6 +166,7 @@
   - turboflow 선택지 만들기 -> 완료
   - gh pages deploy하기 -> 완료
   - ai모델에 대한 탐색 : BART-base (500MB, 문서보다 단문 요약에 능함) -> 좋은건 너무 크거나 라이센스 문제가 있고 그게 해결된것들은 오류만 뱉거나 한국어를 잘 못함
+
   ### 1차 사용성테스트
    - 고쳐야할 버그
      - settings 가기전에 navdial 바뀌기
@@ -176,9 +186,10 @@
      - compress - base64
      - 역변환기능도
      - map 초기화기능
- - 소켓관련 자료 수집
+
+  - 소켓관련 자료 수집
+
   ### 사전 규약 설정
-  
    - 필요한 기능?
      - 노드 Position (x, y) - "node_move"
      ```JSON
@@ -210,6 +221,7 @@
          type: "node_add"
          payload: {
            id,
+           label,
            position: {
              x,
              y
@@ -303,6 +315,7 @@
    - ELK 실행 - "elk_layout" -> 완료
    - 엣지 생성 - "edge_add" -> 완료
    - 노드 삭제 / 엣지 삭제 시 연결부분 로그 서버에서 삭제처리하기(로그최적화)
+
   - canvas 사설방과 로컬방 분리하기 -> 완료
   - 서버 - 클라이언트B로 데이터 동기화하는 부분 -> 완료
   - 현재 클라이언트 - 서버 소켓 연결 완료
@@ -333,6 +346,7 @@
    - onNodesDelete와 마찬가지로 useRef, useEffect로 변경된 setModeFlag를 갖고있기
    - 이외 비슷한 문제 동일처리
    - 이를 해결하고보니 zoomOut이 비동기 이후 처리하는 함수라 zoomOut시간이 고스란히 동기화되지않는시간임
+
   - zoomOut버려? -> 버림
   - 동기화를 서버만 해놓고 react에서 안받았다!
     - 로그 한번에 받을때 resizerobserver 루프초과 이슈 있음
@@ -340,6 +354,7 @@
       - 서버 설정 완료
       - onNodesDelete는 그만 놔주고 직접 만들어야겠다 -> 안놔주고 onNodesDelete를 재사용성 있게 수정함
   - develop task가 너무 길어져서 summary로 단축
+
   ### 2차 사용성테스트
    - connect가 끊겼을 때 알림이 콘솔에서밖에 없음
    - socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)
@@ -375,17 +390,19 @@
      - 이거는 edge만 조사하면된다. regex로 걸러내서 빈도가 많은 노드 검출 가능
      - 통계는 서버에서 하십시오 내용이 많을거같음
       - 어떤 통계를 할지는 다음 테스트에 하자. 아이디어없이 시간끄는느낌?
-  - 발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음 해결완료
+
+  - 발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음 -> 해결완료
   - compress 서버 전송 테스트하기
   - aws ec2 서버 구축하기
   - oracle cloud 정상화되면 다시 구동할생각도
   - oracle로 서버 구축완료
-  - 발동 조건은 찾지 못했는데 게스트 입장시 getIncomer에서 id에러 있음
+  - 발동 조건은 찾지 못했는데 게스트 입장시 getIncomer에서 id에러 있음 -> 이 오류가 매우 특수한 조건에서 발생해서 찾아야함
   - 소켓 연결 완료
   - DNS 구매 완료
   - DNS 연결 완료
   - redis 사용예정 DNS 구매로 해결
-  - 라이브 상황에서 hostFlag가 간혹 제대로 작동하지 않음
+
+  ## 라이브 상황에서 hostFlag가 간혹 제대로 작동하지 않는 오류 발생
     - 브라우저가 최초로 접속하면 hostFlag가 동작하지 않음을 확인함
     - HashRouter로 변경
     - Router 문제 수정중 - urlCopy 고장남
@@ -396,24 +413,34 @@
     - 해결방안1 : id(websocket)으로 탭도 구분하게 함
     - 해결방안2 : global lock으로 async lock의 이중 락 설정 방지
     - urlCopy는 live Router문제로 다시 해결해야함
+    - 재발생한 host assign 중복문제에 대한 해결
+      - urlCopy/router/host assing/disconnect 모두 원인이 동일해서 browserRouter로 원복
+      - 데이터 삭제시점을 disconnect할 때로 통일
+      - lock을 connect에서 직접 관리하도록 클래스 변수로 편입하여 처리(endpoint에서는 뭔짓을 해도 안된다)
+        - 왜 lock으로 처리를 못했나?
+        - 외부 전역변수 room_locks로는 connect을 받을때 await으로 비동기상태였기 때문에 해당 "상태"에서 room_locks은 변하지 않은 "상태"임 그래서 connection이 lock이 걸리지 않았기 때문에 둘 다 True인 상태로 들어온것
+      - lock 상태에서도 동일 문제가 반복되어 로그를 찍어보니 동일한 락을 갖고 내부 함수를 실행중인 것을 발견
+      - global lock을 connection 객체 내에 만들어서 connection 객체 전체에 lock을 걸고 실행하게함
+      - 그래도 여전한 문제
+      - lock을 찍어보니 lock이 다른데 코드는 아무튼 실행함
+      - connectionManager 생성이 여러번이면 그럴 수 있다는 말에 로그찍어봄
+      - 정확히 3번생성됨 어... 3번? gunicorn 워커 3갠데
+      - 소켓은 워커 1개 싱글 프로세스로 하십시오...
+      - 이거 예전 프로젝트에서도 있었던건데 그땐 ingress로 동일연결은 동일워커로 보내줘서 됐던건데 그걸 까먹었네
+
   - urlCopy 문제
     - 복사된 URL을 넣으면 데이터가 입력이 안됨 -> 해결
     - 복사된 URL을 넣으면 데이터 입력과 host설정은 되는데 duplicate오류가 발생함
     - 데이터 복사 URL을 비활성화하고 문제 해결할것
   - disconnect가 제대로 되지 않아서 데이터가 남는 문제 발생 -> 헤결
-  - 재발생한 host assign 중복문제에 대한 해결
-    - urlCopy/router/host assing/disconnect 모두 원인이 동일해서 browserRouter로 원복
-    - 데이터 삭제시점을 disconnect할 때로 통일
-    - lock을 connect에서 직접 관리하도록 클래스 변수로 편입하여 처리(endpoint에서는 뭔짓을 해도 안된다)
-      - 왜 lock으로 처리를 못했나?
-      - 외부 전역변수 room_locks로는 connect을 받을때 await으로 비동기상태였기 때문에 해당 "상태"에서 room_locks은 변하지 않은 "상태"임 그래서 connection이 lock이 걸리지 않았기 때문에 둘 다 True인 상태로 들어온것
-    - lock 상태에서도 동일 문제가 반복되어 로그를 찍어보니 동일한 락을 갖고 내부 함수를 실행중인 것을 발견
-    - global lock을 connection 객체 내에 만들어서 connection 객체 전체에 lock을 걸고 실행하게함
-    - 그래도 여전한 문제
-    - connectionManager 생성이 여러번이면 그럴 수 있다는 말에 로그찍어봄
-    - 정확히 3번생성됨 어... 3번? gunicorn 워커 3갠데
-    - 소켓은 워커 1개 싱글 프로세스로 하십시오...
-    - 이거 예전 프로젝트에서도 있었던건데 그땐 ingress로 동일연결은 동일워커로 보내줘서 됐던건데 그걸 까먹었네
+  - connectEnd 사용성이 별로고 클릭만해도 end가 되는 문제가 있음 -> 해결
+    - connectStart 추가해서 일정 거리 움직여야 "connectEnd" 동작 의도로 파악
+  - Node_add에 label도 추가
+  - incomers 오류 발생 원인 파악함 -> 해결
+    - onNodesDelete에서 node에 id가 안들어감
+    - 왜 안들어가나?
+    - onNodesDelete 반환하지 않는거 수정해야함 ㅇ-ㅇ-ㅇ로 테스트하면됨
+    - 겸사겸사 nodes delete시 edge duplicate 문제 해결
 </details>
 
 <details>

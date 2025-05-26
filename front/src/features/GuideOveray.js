@@ -10,9 +10,10 @@ const dialTip = [
   '현재 Flow 정보를 로컬에서 확인 가능한 URL로 저장합니다',
   'Flow를 초기화합니다',
   '가이드를 확인합니다',
+]
+const socketTip = [
   'Host일 경우 나타납니다(Host가 종료하면 연결이 종료됨)',
 ]
-
 const localTip = [
   '맵을 현재 브라우저에 저장합니다.',
   '브라우저에 저장된 맵을 불러옵니다.',
@@ -40,7 +41,7 @@ const GuideOveray = ({ roomId, closeGuide }) => {
         <div className="label nav">클릭 시 노드를 생성합니다</div>
         <div className="highlight adder"></div>
       </div>}
-      {(roomId === 'local' ? [...localTip, ...dialTip] : dialTip).map((tooltip, idx) =>
+      {(roomId === 'local' ? [...localTip, ...dialTip] : [...dialTip, ...socketTip]).map((tooltip, idx) =>
         (curPage === idx + 6) && (
           <div key={idx}>
             <div className="label" style={{ marginBottom: `${90 + idx * 44}px`, }}>{tooltip}</div>
