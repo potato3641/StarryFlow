@@ -98,6 +98,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   const turboFlag = useSelector((state) => state.flow.turboFlag);
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
+  const dragStartRef = useRef(null);
   const [tempRef, setTempRef] = useState(null);
   const [renderCnt, setRenderCnt] = useState(rerender_key);
   const [nodes, setLocalNodes, onNodesChange] = useNodesState([]);
@@ -116,7 +117,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   const autoFitViewFlagRef = useRef();
   const sortDirectionFlagRef = useRef();
   const turboFlagRef = useRef();
-  const defaultNodeValueRef = useRef();
   const defaultEdgeColorRef = useRef();
   const flowDataRef = useRef();
   useEffect(() => { // for socket elk refenence
@@ -138,9 +138,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     turboFlagRef.current = turboFlag;
   }, [turboFlag]);
   useEffect(() => { // for socket ref
-    defaultNodeValueRef.current = defaultNodeValue;
-  }, [defaultNodeValue]);
-  useEffect(() => { // for socket ref
     defaultEdgeColorRef.current = defaultEdgeColor;
   }, [defaultEdgeColor]);
   useEffect(() => { // for socket ref
@@ -149,6 +146,19 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   useEffect(() => { // for socket ref
     flowDataRef.current = flowData;
   }, [flowData])
+
+  const mergeEdgesUniqueById = (arr1, arr2) => {
+    const seen = new Set();
+    const result = [];
+    for (const edge of [...arr1, ...arr2]) {
+      if (!seen.has(edge.id)) {
+        seen.add(edge.id);
+        result.push(edge);
+      }
+    }
+
+    return result;
+  }
 
   /**
    * 소켓 통신에서 수신한 메세지 타입에 따라 처리
@@ -159,7 +169,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     const fitViewFlag = autoFitViewFlagRef?.current;
     const sortDirFlag = sortDirectionFlagRef?.current;
     const themeFlag = turboFlagRef?.current;
-    const defaultNodeVal = defaultNodeValueRef?.current;
     const defaultEdgeClr = defaultEdgeColorRef?.current;
     const temporaryFlow = tempRefRef; // for settings
     if (msg.type === 'batch_update') {
@@ -184,7 +193,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       const newNode = {
         id: msg.payload.id,
         type: 'custom',
-        data: { label: `${defaultNodeVal}` },
+        data: { label: msg.payload.label },
         position: msg.payload.position,
       }
       if (currentSetModeFlag)
@@ -237,11 +246,8 @@ const FlowCanvas = ({ roomId, openGuide }) => {
           recursionNodes: recursionNodes.filter(node => node.id !== msg.payload.id),
           recursionEdges: onNodesDeleteRef.current([targetRecursionNode], recursionFlow)
         }
-      } else {
-        const targetNode = nodesRef?.current.find(node => node.id === msg.payload.id);
-        targetNode && onNodesDeleteRef.current([targetNode]);
+      } else
         setLocalNodes((prev) => prev.filter(node => node.id !== msg.payload.id));
-      }
     } else if (msg.type === "edge_add") {
       const newEdge = {
         id: msg.payload.id,
@@ -257,7 +263,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       else if (recursionFlag)
         return { recursionNodes, recursionEdges: [...recursionEdges, newEdge] }
       else
-        setLocalEdges((prevEdges) => [...prevEdges, newEdge]);
+        setLocalEdges((prevEdges) => mergeEdgesUniqueById(prevEdges, [newEdge]));
     } else if (msg.type === "edge_delete") {
       const remainEdges = (prevEdges) =>
         prevEdges.filter((edge) =>
@@ -310,6 +316,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
             type: "node_add",
             payload: {
               id: node.id,
+              label: node.label,
               position: node.position,
             }
           })),
@@ -342,7 +349,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       }
     }
     // eslint-disable-next-line
-  }, [flowDataRef, autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultNodeValueRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
+  }, [flowDataRef, autoFitViewFlagRef, sortDirectionFlagRef, setModeFlagRef, defaultEdgeColorRef, turboFlagRef, fitView, onNodesDeleteRef, setLocalEdges, setLocalNodes, tempRefRef])
 
   const { sendMessage, connected } = useWebSocket(roomId, handleMessage);
   const socketFlag = roomId !== 'local' && connected;
@@ -579,7 +586,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       const incomers = getIncomers(node, targetNodes, targetEdges);
       const outgoers = getOutgoers(node, targetNodes, targetEdges);
       const connectedEdges = getConnectedEdges([node], targetEdges);
-
       const remainingEdges = acc.filter(
         (edge) => !connectedEdges.includes(edge),
       );
@@ -595,30 +601,30 @@ const FlowCanvas = ({ roomId, openGuide }) => {
           },
         })),
       );
+      if (!flow) {
+        if (connected && !setModeFlag) {
+          createdEdges.forEach((edge) => {
+            sendMessage({
+              type: "edge_add",
+              payload: {
+                id: `xy-edge__${edge.source}-${edge.target}`,
+                source: edge.source,
+                target: edge.target,
+              }
+            });
+          });
+        }
 
-      if (connected && !setModeFlag) {
-        createdEdges.forEach((edge) => {
+        if (connected && !setModeFlag) {
           sendMessage({
-            type: "edge_add",
+            type: "node_delete",
             payload: {
-              id: `xy-edge__${edge.source}-${edge.target}`,
-              source: edge.source,
-              target: edge.target,
+              id: node.id,
             }
           });
-        });
+        }
       }
-
-      if (connected && !setModeFlag) {
-        sendMessage({
-          type: "node_delete",
-          payload: {
-            id: node.id,
-          }
-        });
-      }
-
-      return [...remainingEdges, ...createdEdges];
+      return mergeEdgesUniqueById(remainingEdges, createdEdges);
     }, targetEdges)
     if (flow)
       return newEdges;
@@ -677,6 +683,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         type: "node_add",
         payload: {
           id: id,
+          label: `${defaultNodeValue}`,
           position: {
             x: x,
             y: y,
@@ -870,7 +877,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       .catch(err => {
         console.error('Failed to copy:', err);
       });
-  }, [rfInstance, flowSettings])
+  }, [rfInstance, flowSettings, hostFlag, roomId])
 
   /**
    * [Dial] 현재 flow의 모든 데이터 제거
@@ -918,13 +925,30 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     }
   }, [connected, sendMessage, setModeFlag])
 
+  /**
+   * 마우스 이동 확인용 reference 갱신
+   */
+  const onConnectStart = useCallback((event) => {
+    const { clientX, clientY } =
+      'touches' in event ? event.touches[0] : event;
+    dragStartRef.current = { x: clientX, y: clientY };
+  }, []);
 
+  /**
+   * 간선 놓을때 노드 자동생성
+   */
   const onConnectEnd = useCallback(
     (event, connectionState) => {
-      if (!connectionState.isValid) {
+      const { clientX, clientY } =
+        'changedTouches' in event ? event.changedTouches[0] : event;
+
+      const dragStart = dragStartRef.current;
+      const dx = dragStart ? clientX - dragStart.x : 0;
+      const dy = dragStart ? clientY - dragStart.y : 0;
+      const dragDistance = Math.sqrt(dx * dx + dy * dy);
+
+      if (!connectionState.isValid && dragDistance > 20) { // 20이상 움직였을때 동작
         const id = getNodeId();
-        const { clientX, clientY } =
-          'changedTouches' in event ? event.changedTouches[0] : event;
         const edgeSource = connectionState.fromNode.id;
         const edgeId = `xy-edge__${edgeSource}-${id}`
 
@@ -954,6 +978,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
             type: "node_add",
             payload: {
               id: id,
+              label: `${defaultNodeValue}`,
               position: screenToFlowPosition({
                 x: clientX,
                 y: clientY,
@@ -986,7 +1011,8 @@ const FlowCanvas = ({ roomId, openGuide }) => {
         connectionLineStyle={connectionLineStyle} // connect 라인 스타일
         defaultEdgeOptions={defaultEdgeOptions} // edge 기본설정
         onConnect={onConnect} // 연결
-        onConnectEnd={onConnectEnd} // 작업중
+        onConnectStart={onConnectStart} // 드래그 여부
+        onConnectEnd={onConnectEnd} // 자동 노드생성기
         onNodesChange={onNodesChange} // 노드 수정
         onNodeClick={onNodeClick} // 노드클릭
         onPaneClick={onPaneClick} // 노드외 클릭
