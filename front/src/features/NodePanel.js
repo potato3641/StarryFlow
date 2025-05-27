@@ -1,5 +1,5 @@
 import { Panel } from '@xyflow/react';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { TextField, Typography, Button } from '@mui/material'
 import { Check } from '@mui/icons-material';
 import {
@@ -26,7 +26,20 @@ const NodePanel = () => {
   const [localEdgeColor, setLocalEdgeColor] = useState(edgeColor);
   const [localLabel, setLocalLabel] = useState(label || '');
   const [localFontSize, setLocalFontSize] = useState(fontSize || 14);
+  const [textFieldFlag, setTextFieldFlag] = useState(false);
+  const textFieldRef = useRef(null);
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    setTextFieldFlag(!setModeFlag || id === "value");
+  }, [setModeFlag, id])
+
+  useEffect(() => {
+    if (textFieldFlag && textFieldRef?.current) {
+      textFieldRef.current.focus();
+      textFieldRef.current.select();
+    }
+  }, [textFieldFlag])
 
   useEffect(() => {
     setLocalLabel(label);
@@ -70,6 +83,7 @@ const NodePanel = () => {
       {(!setModeFlag || id === "value") && (<>
         <Typography variant='h6'>Label </Typography>
         <TextField
+          inputRef={textFieldRef}
           value={localLabel}
           onChange={(evt) => setLocalLabel(evt.target.value)}
           variant="outlined" multiline autoFocus

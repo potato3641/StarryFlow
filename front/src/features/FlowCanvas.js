@@ -106,6 +106,11 @@ const FlowCanvas = ({ roomId, openGuide }) => {
   const [rfInstance, setRfInstance] = useState(null);
   const location = useLocation();
   const [flowData, setFlowData] = useState(null);
+  const [tempLabel, setTempLabel] = useState('');
+  const [tempFontSize, setTempFontSize] = useState(14);
+  const [copiedFlag, setCopiedFlag] = useState(false);
+  const copyNodeRef = useRef();
+  const pasteNodeRef = useRef();
   const { setViewport, fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
   // SOCKET
   const [hostFlag, setHostFlag] = useState(false);
@@ -147,6 +152,9 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     flowDataRef.current = flowData;
   }, [flowData])
 
+  /**
+   * 배열 병합 함수
+  */
   const mergeEdgesUniqueById = (arr1, arr2) => {
     const seen = new Set();
     const result = [];
@@ -193,6 +201,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       const newNode = {
         id: msg.payload.id,
         type: 'custom',
+        fontSize: msg.payload.fontSize || 14,
         data: { label: msg.payload.label },
         position: msg.payload.position,
       }
@@ -317,6 +326,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
             payload: {
               id: node.id,
               label: node.label,
+              fontSize: node.fontSize || 14,
               position: node.position,
             }
           })),
@@ -417,6 +427,70 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     // eslint-disable-next-line
   }, [flowData, dispatch]);
 
+
+  /**
+   * [Dial] 새 노드 추가 함수 : 
+   * 노드 기본 값을 가진 새 노드 생성. 이전 노드 값을 기억하여 이전 노드 Position의 20, 20 추가된 위치에 새 노드를 생성한다
+   */
+  const onAdd = useCallback((nodeLabel = defaultNodeValue, nodeSize = 14) => {
+    const id = getNodeId();
+    const screen = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    const x = screen.x - 25;
+    const y = screen.y - 25;
+    const newNode = {
+      id,
+      type: 'custom',
+      data: { label: nodeLabel },
+      fontSize: nodeSize,
+      position: {
+        x,
+        y,
+      },
+    };
+    setLocalNodes((prevNodes) => [...prevNodes, newNode]);
+    if (connected && !setModeFlag) {
+      sendMessage({
+        type: "node_add",
+        payload: {
+          id: id,
+          label: nodeLabel,
+          fontSize: nodeSize,
+          position: {
+            x: x,
+            y: y,
+          },
+        }
+      });
+    }
+  }, [setLocalNodes, defaultNodeValue, screenToFlowPosition, connected, sendMessage, setModeFlag]);
+
+  /**
+   * 노드 복사
+   */
+  const copyNode = useCallback(() => {
+    if (id) {
+      setTempFontSize(fontSize)
+      setTempLabel(label)
+      setCopiedFlag(true);
+    }
+  }, [id, label, fontSize])
+
+  useEffect(() => {
+    copyNodeRef.current = copyNode;
+  }, [copyNode])
+
+  /**
+   * 노드 붙여넣기
+   */
+  const pasteNode = useCallback(() => {
+    if (copiedFlag)
+      onAdd(tempLabel, tempFontSize);
+  }, [tempLabel, tempFontSize, copiedFlag, onAdd])
+
+  useEffect(() => {
+    pasteNodeRef.current = pasteNode;
+  }, [pasteNode])
+
   // 최초 혹은 재접속시 로컬에 등록된 데이터 가져오기
   useEffect(() => {
     // local data loading
@@ -447,6 +521,16 @@ const FlowCanvas = ({ roomId, openGuide }) => {
       setLocalEdges([]) // 가져와야함 서버에서
       setViewport({ x, y, zoom }) // 가져와야함 서버에서
     }
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key === 'c') {
+        copyNodeRef.current();
+      }
+      if (e.ctrlKey && e.key === 'v') {
+        pasteNodeRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line
   }, [])
 
@@ -642,7 +726,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
    */
   const onNodeClick = useCallback((e, node) => {
     const target = nodes.find((n) => n.id === node.id)
-    const label = target.data?.label || ''
+    const label = target.data?.label;
     const fontSize = target.data?.fontSize || 14;
     dispatch(setSelectedNode(node.id));
     dispatch(setsLabel(label));
@@ -658,40 +742,6 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     dispatch(clearsLabel());
     dispatch(clearsFontSize());
   }
-
-  /**
-   * [Dial] 새 노드 추가 함수 : 
-   * 노드 기본 값을 가진 새 노드 생성. 이전 노드 값을 기억하여 이전 노드 Position의 20, 20 추가된 위치에 새 노드를 생성한다
-   */
-  const onAdd = useCallback(() => {
-    const id = getNodeId();
-    const screen = screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
-    const x = screen.x - 25;
-    const y = screen.y - 25;
-    const newNode = {
-      id,
-      type: 'custom',
-      data: { label: `${defaultNodeValue}` },
-      position: {
-        x,
-        y,
-      },
-    };
-    setLocalNodes([...nodes, newNode]);
-    if (connected && !setModeFlag) {
-      sendMessage({
-        type: "node_add",
-        payload: {
-          id: id,
-          label: `${defaultNodeValue}`,
-          position: {
-            x: x,
-            y: y,
-          },
-        }
-      });
-    }
-  }, [setLocalNodes, nodes, defaultNodeValue, screenToFlowPosition, connected, sendMessage, setModeFlag]);
 
   /**
    * settings에서 설정한 값 반환
@@ -998,6 +1048,7 @@ const FlowCanvas = ({ roomId, openGuide }) => {
     },
     [setLocalNodes, setLocalEdges, screenToFlowPosition, connected, setModeFlag, sendMessage, turboFlag, defaultNodeValue, defaultEdgeColor],
   );
+
   return (
     <div className={`wrapper ${turboFlag ? 'turbo' : ''}`}>
       <ReactFlow

@@ -13,7 +13,6 @@ import { keyframes } from '@mui/system';
 import { useSelector } from 'react-redux';
 
 const dialIcon = (onAdd, goCanvas, handler, flag) => {
-  // console.log(val)
   return (
     <Tooltip title="Setting Complete" placement='left'>
       {flag ? (
@@ -62,6 +61,8 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
   // REDUX
   const setModeFlag = useSelector((state) => state.flow.setModeFlag);
   // REACT
+  const [opener, setOpener] = useState(false);
+  const [openLock, setOpenLock] = useState(true);
   const [firstConnectionFlag, setFirstConnectionFlag] = useState(true)
   const [state, setState] = useState({
     open: false,
@@ -71,6 +72,10 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
 
   const handleClick = (message = 'Done', tid) => {
     if (state.open && state.tid === tid) return;
+    if (tid === 2 || tid === 9) {
+      setOpenLock(true);
+      setOpener(false);
+    }
     setState({
       ...state,
       open: true,
@@ -113,8 +118,13 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
     <div>
       <SpeedDial
         ariaLabel='SpeedDial for drawing map'
-        open={true}
-        onClick={(e) => e.stopPropagation()}
+        open={opener}
+        onClick={(e) => { e.stopPropagation(); openLock && setOpener(true); openLock && setOpenLock(false); }}
+        FabProps={{
+          sx: {
+            display: opener ? 'none' : 'flex',
+          },
+        }}
         sx={{
           position: 'absolute',
           bottom: 16,
@@ -130,8 +140,8 @@ const NavDial = ({ onAdd, onSave, onRestore, onFit, onSort, goSet, goCanvas, onS
             ...hostFlag ? activateFabGlowStyle : activateFabShadowStyle,
           }
         }}
-        icon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
-        openIcon={dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
+        icon={opener ? null : dialIcon(onAdd, goCanvas, handleClick, setModeFlag)}
+        openIcon={null}
       >
         {(setModeFlag ? actions.filter(action => setModeActions.includes(action.id)) : socketON ? actions.filter(action => socketActions.includes(action.id)) : actions.filter(action => action.id !== '12')).map((action) => (
           <SpeedDialAction

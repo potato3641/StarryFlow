@@ -22,7 +22,7 @@ const localTip = [
 const GuideOveray = ({ roomId, closeGuide }) => {
 
   const [curPage, setCurPage] = useState(1);
-  const totalPage = 5 + dialTip.length + (roomId === 'local' ? 2 : 0);
+  const totalPage = 4 + dialTip.length + (roomId === 'local' ? 2 : 0);
 
   const handleNext = () => {
     if (curPage === totalPage)
@@ -37,15 +37,11 @@ const GuideOveray = ({ roomId, closeGuide }) => {
       {curPage === 2 && <div className="highlight snackbar">상태 표시 알림</div>}
       {curPage === 3 && <div className="highlight minimap">Flow 요약<br />미니맵</div>}
       {curPage === 4 && <div className="highlight navigator" style={{ height: `${390 + (roomId === 'local') * 88}px` }}>네비게이션</div>}
-      {curPage === 5 && <div>
-        <div className="label nav">클릭 시 노드를 생성합니다</div>
-        <div className="highlight adder"></div>
-      </div>}
       {(roomId === 'local' ? [...localTip, ...dialTip] : [...dialTip, ...socketTip]).map((tooltip, idx) =>
-        (curPage === idx + 6) && (
+        (curPage === idx + 5) && (
           <div key={idx}>
-            <div className="label" style={{ marginBottom: `${90 + idx * 44}px`, }}>{tooltip}</div>
-            <div className="highlight" style={{ bottom: `${80 + idx * 44}px`, right: '13px', width: '40px', height: '40px' }}></div>
+            <div className="label" style={{ marginBottom: `${34 + idx * 44}px`, }}>{tooltip}</div>
+            <div className="highlight" style={{ bottom: `${24 + idx * 44}px`, right: '13px', width: '40px', height: '40px' }}></div>
           </div>
         )
       )}
