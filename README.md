@@ -32,6 +32,7 @@
 
 ### :page_with_curl: **회고**
   - 작성중...
+  - **백엔드의 프로덕션과 라이브 코드는 다를 수 있습니다.**
 
 ## :blue_book: 프로젝트 과정
 
@@ -73,63 +74,61 @@
   - UX/UI 중심 개선점 적용
   - host/guest/new guest 간의 데이터 동기화 및 히스토리 축약
   - 배포 및 기본 테스트 완료
-  
-### :package: 마무리 및 회고 (25.05.22)
+
+### :warning: 개발자 경험 피드백 (25.05.22 ~ 25.05.28)
   - gitgub pages 리다이렉트 문제 수정
   - 프로젝트 정리 및 문서화
   - 사용기술 정리
-  - **백엔드의 프로덕션과 라이브 코드는 다를 수 있습니다.**
-
-### :warning: 3차 사용자 경험 피드백 (25.05.23 ~ 25.05.27)
   - 라이브 환경에서 발생하는 버그 수정
-  - 파이프라인을 위한 로컬/서버별 env 추가
+  - 파이프라인 개선
+  - REAS API 아이디어 구상중
 
 <details open>
   <summary>completed develop note</summary>
 
 ## develop task - complete
   ### map에 관한 아이디어
-   - 디자인은 밤하늘 컨셉으로
-   - 개체당 작업
-     - 더블 클릭 시 내용 수정 (제목 / 내용) -> NodePanel에서 변경
-     - 우클릭으로 삭제 -> backspace로 삭제
-     - 분화는 어떻게하지? -> 자유
-     - 분화는 8개제한 시계 8방향, 리프노드일 경우만 색으로 구분지어주기 -> 자유
-   - page 작업
-     - 저장(cloud용 버튼만 일단) -> localstorage로 일단 완료
-     - 정리(집나간 개체들 가운데 모아주기) -> 완료
-     - 공유(hex변환 page)
-     - share는 base64거쳐서, 서버로는 compress만
-   - drag div 만들어서 직접 연결하기 -> react flow에 스타일 붙이기로 변경
+    - 디자인은 밤하늘 컨셉으로
+    - 개체당 작업
+      - 더블 클릭 시 내용 수정 (제목 / 내용) -> NodePanel에서 변경
+      - 우클릭으로 삭제 -> backspace로 삭제
+      - 분화는 어떻게하지? -> 자유
+      - 분화는 8개제한 시계 8방향, 리프노드일 경우만 색으로 구분지어주기 -> 자유
+    - page 작업
+      - 저장(cloud용 버튼만 일단) -> localstorage로 일단 완료
+      - 정리(집나간 개체들 가운데 모아주기) -> 완료
+      - 공유(hex변환 page)
+      - share는 base64거쳐서, 서버로는 compress만
+    - drag div 만들어서 직접 연결하기 -> react flow에 스타일 붙이기로 변경
 
   - 작업중... darge sort : edge handle problem -> elkjs로 변경됨
   - edge변경작업을 하며 느꼈는데 진지하게 공부해서 redux를 추가해야겠다 -> 완료
   - redux하다가 꼬이고 내가 원하는 커스텀 상태에서 handle 수직/수평이 결국 안되는거에 화나서 그냥 connectedLine으로 변경 결정 -> 완료
 
   ### selectedNode작업(redux 값 변화)
-   - 노드클릭(FlowCanvas/onNodeClick)
-     - setSelectedNode (empty -> id)
-     - setsLabel (empty -> label)
-     - setsFontSize (empty -> fontSize)
-   - 판넬오픈(NodePanel)
-     - empty -> state.flow.sLabel
-     - empty -> state.flow.sFontSize
-     - empty -> state.flow.defaultNodeColor
-     - empty -> state.flow.defaultEdgeColor
-     - empty -> state.flow.defaultValue
-   - 판넬작성후apply(NodePanel/applySelectedNode)
-     - setsLabel (label -> newLabel)
-     - setsFontSize (fontSize -> newFontSize)
-     - activateApplyFlag (false -> true)
-     - setDefaultNodeColor (nodecolor -> newNodeColor)
-     - setDefaultEdgeColor (edgecolor -> newEdgeColor)
-     - setDefaultNodeValue (value -> newValue)
-   - 캔버스업데이트(FlowCanvas/useEffect)
-     - deactivateApplyFlag (true -> false)
-     - clearSelectedNode (id -> empty)
-     - clearsLabel (newLabel -> empty)
-     - clearsFontSize (newFontSize -> empty)
-   - 추후 추가될 노드 수정작업은 위에 추가해서 정리하는걸로
+    - 노드클릭(FlowCanvas/onNodeClick)
+      - setSelectedNode (empty -> id)
+      - setsLabel (empty -> label)
+      - setsFontSize (empty -> fontSize)
+    - 판넬오픈(NodePanel)
+      - empty -> state.flow.sLabel
+      - empty -> state.flow.sFontSize
+      - empty -> state.flow.defaultNodeColor
+      - empty -> state.flow.defaultEdgeColor
+      - empty -> state.flow.defaultValue
+    - 판넬작성후apply(NodePanel/applySelectedNode)
+      - setsLabel (label -> newLabel)
+      - setsFontSize (fontSize -> newFontSize)
+      - activateApplyFlag (false -> true)
+      - setDefaultNodeColor (nodecolor -> newNodeColor)
+      - setDefaultEdgeColor (edgecolor -> newEdgeColor)
+      - setDefaultNodeValue (value -> newValue)
+    - 캔버스업데이트(FlowCanvas/useEffect)
+      - deactivateApplyFlag (true -> false)
+      - clearSelectedNode (id -> empty)
+      - clearsLabel (newLabel -> empty)
+      - clearsFontSize (newFontSize -> empty)
+    - 추후 추가될 노드 수정작업은 위에 추가해서 정리하는걸로
 
   - Node-Line-Edge 구성 및 노드 수정 및 연동 기능 완료
   - modification function에 width height도 넣어보고싶은데 -> 취소 : relative로 변경
@@ -145,14 +144,14 @@
   - onadd speeddial 클릭문제 해결(icon range)
 
   ### settings에 들어갈 옵션 완성하기
-   - minimap on/off flag -> 기능완료 mapFlag
-   - node 왼쪽정렬/가운데정렬/오른쪽정렬 (선택박스) -> 기능완료 defaultNodeAlign
-   - node color 팔레트 -> 기능완료 defaultNodeColor
-   - 정렬 후 자동 Fitview on/off flag -> 기능완료 autoFitViewFlag
-   - sort 방향 flag -> 기능완료 sortDirectionFlag
-   - cycle 형성 방제 on/off flag -> 기능완료 cycleValidateFlag
-   - node default value 변경 -> 기능완료 defaultNodeValue
-   - blur node value at min-zoom flag -> 기능완료 zoomOutBlurFlag
+    - minimap on/off flag -> 기능완료 mapFlag
+    - node 왼쪽정렬/가운데정렬/오른쪽정렬 (선택박스) -> 기능완료 defaultNodeAlign
+    - node color 팔레트 -> 기능완료 defaultNodeColor
+    - 정렬 후 자동 Fitview on/off flag -> 기능완료 autoFitViewFlag
+    - sort 방향 flag -> 기능완료 sortDirectionFlag
+    - cycle 형성 방제 on/off flag -> 기능완료 cycleValidateFlag
+    - node default value 변경 -> 기능완료 defaultNodeValue
+    - blur node value at min-zoom flag -> 기능완료 zoomOutBlurFlag
 
   - 개편이 필요한것 : connectLine이 너무 얇다 클릭하기 힘들어 -> width 2로 늘렸으나 3을 고려해봐야할듯
   - Setting을 모달로 하기보다 기왕 FlowCanvas 만든거 이거 이용해서 fixed nodes갖고 값 바꾸라고 하면 좋을거같다
@@ -168,24 +167,24 @@
   - ai모델에 대한 탐색 : BART-base (500MB, 문서보다 단문 요약에 능함) -> 좋은건 너무 크거나 라이센스 문제가 있고 그게 해결된것들은 오류만 뱉거나 한국어를 잘 못함
 
   ### 1차 사용성테스트
-   - 고쳐야할 버그
-     - settings 가기전에 navdial 바뀌기
-     - turbo 상태일때 노드 색상 변경 기능 숨기기
-     - 줄바꿈 강제로 생기게 하는 max-width 확인하기 -> 300px에서 500px로
-     - elk 사용 직후 turbo 선이 안보임
-     - elk layered 정렬 종류 살펴보고 바꾸거나/포기하기 -> mrtree로 변경
-     - turbo로 나갔지만 재진입시 기본css임
-       - 이 때 자식 connect 안되는 버그 발생
-     - 재진입시 localstorage에서 안불러옴
-     - turbo의 fit이 아슬아슬함. turbo일때는 더 조여야할듯
-     - turbo의 nodeNode간격 넓혀야
-     - 노드 생성범위를 좁혀야...
-   - 필요한 기능
-     - 노드의 선 색을 바꾸는 기능도 추가했으면
-     - 노드 설정에 visible 추가하기 (개인설정?) -> mrtree 변환 이후실효성이 없음
-     - compress - base64
-     - 역변환기능도
-     - map 초기화기능
+    - 고쳐야할 버그
+      - settings 가기전에 navdial 바뀌기
+      - turbo 상태일때 노드 색상 변경 기능 숨기기
+      - 줄바꿈 강제로 생기게 하는 max-width 확인하기 -> 300px에서 500px로
+      - elk 사용 직후 turbo 선이 안보임
+      - elk layered 정렬 종류 살펴보고 바꾸거나/포기하기 -> mrtree로 변경
+      - turbo로 나갔지만 재진입시 기본css임
+        - 이 때 자식 connect 안되는 버그 발생
+      - 재진입시 localstorage에서 안불러옴
+      - turbo의 fit이 아슬아슬함. turbo일때는 더 조여야할듯
+      - turbo의 nodeNode간격 넓혀야
+      - 노드 생성범위를 좁혀야...
+    - 필요한 기능
+      - 노드의 선 색을 바꾸는 기능도 추가했으면
+      - 노드 설정에 visible 추가하기 (개인설정?) -> mrtree 변환 이후실효성이 없음
+      - compress - base64
+      - 역변환기능도
+      - map 초기화기능
 
   - 소켓관련 자료 수집
 
@@ -222,6 +221,7 @@
          payload: {
            id,
            label,
+           fontSize,
            position: {
              x,
              y
@@ -307,14 +307,14 @@
      ```
   - 보안관련 자료수집
   ### 제작중인 기능
-   - 노드 Position (x, y) - "node_move" -> 완료
-   - 노드 변경 (label) - "node_update" -> 완료
-   - 노드 생성 - "node_add" -> 완료
-   - 노드 삭제 - "node_delete" -> 완료
-   - 엣지 삭제 - "edge_delete" -> 완료
-   - ELK 실행 - "elk_layout" -> 완료
-   - 엣지 생성 - "edge_add" -> 완료
-   - 노드 삭제 / 엣지 삭제 시 연결부분 로그 서버에서 삭제처리하기(로그최적화)
+    - 노드 Position (x, y) - "node_move" -> 완료
+    - 노드 변경 (label) - "node_update" -> 완료
+    - 노드 생성 - "node_add" -> 완료
+    - 노드 삭제 - "node_delete" -> 완료
+    - 엣지 삭제 - "edge_delete" -> 완료
+    - ELK 실행 - "elk_layout" -> 완료
+    - 엣지 생성 - "edge_add" -> 완료
+    - 노드 삭제 / 엣지 삭제 시 연결부분 로그 서버에서 삭제처리하기(로그최적화)
 
   - canvas 사설방과 로컬방 분리하기 -> 완료
   - 서버 - 클라이언트B로 데이터 동기화하는 부분 -> 완료
@@ -331,21 +331,21 @@
   - go canvas 변겅점 이후 테스트하기
 
   ### 플래그의 동기화가 되지 않는 문제 발생
-   - 값이 정해지기전에 mount될때 최초값이 들어가서 문제
-   - 그런데 최초값이 변경이 안됨
-   - 핸들을 무명함수에서 분리하여 handleMessage로
-   - 함수를 useCallback으로 변경
-   - onNodesDelete는 한참뒤에 정의하는데 해당 함수에서도 connect를 사용해서 상호참조되어 warning 발생
-   - 상호참조대신 직접참조하니까 react hook rule을 위반했다
-   - 그렇다고 onNodesDelete를 위로 올리면 안된다
-   - function을 쓰면 된다는데 useCallback함수는 function으로 정의할 수 없다
-   - useRef와 useEffect로 변경된 onNodesDelete를 갖고있기
-   - setModeFlag에도 문제 발생
-   - 분명 useCallback으로 setModeFlag 변경되면 바꾸도록 설정했는데 안바뀐다
-   - setModeFlag를 useCallback 내부에서 정의할 수 없음
-   - onNodesDelete와 마찬가지로 useRef, useEffect로 변경된 setModeFlag를 갖고있기
-   - 이외 비슷한 문제 동일처리
-   - 이를 해결하고보니 zoomOut이 비동기 이후 처리하는 함수라 zoomOut시간이 고스란히 동기화되지않는시간임
+    - 값이 정해지기전에 mount될때 최초값이 들어가서 문제
+    - 그런데 최초값이 변경이 안됨
+    - 핸들을 무명함수에서 분리하여 handleMessage로
+    - 함수를 useCallback으로 변경
+    - onNodesDelete는 한참뒤에 정의하는데 해당 함수에서도 connect를 사용해서 상호참조되어 warning 발생
+    - 상호참조대신 직접참조하니까 react hook rule을 위반했다
+    - 그렇다고 onNodesDelete를 위로 올리면 안된다
+    - function을 쓰면 된다는데 useCallback함수는 function으로 정의할 수 없다
+    - useRef와 useEffect로 변경된 onNodesDelete를 갖고있기
+    - setModeFlag에도 문제 발생
+    - 분명 useCallback으로 setModeFlag 변경되면 바꾸도록 설정했는데 안바뀐다
+    - setModeFlag를 useCallback 내부에서 정의할 수 없음
+    - onNodesDelete와 마찬가지로 useRef, useEffect로 변경된 setModeFlag를 갖고있기
+    - 이외 비슷한 문제 동일처리
+    - 이를 해결하고보니 zoomOut이 비동기 이후 처리하는 함수라 zoomOut시간이 고스란히 동기화되지않는시간임
 
   - zoomOut버려? -> 버림
   - 동기화를 서버만 해놓고 react에서 안받았다!
@@ -356,39 +356,39 @@
   - develop task가 너무 길어져서 summary로 단축
 
   ### 2차 사용성테스트
-   - connect가 끊겼을 때 알림이 콘솔에서밖에 없음
-   - socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)
-   - elk_layout이 await이므로 async()했을때 바로 적용이 되지 않는 문제
-   - node delete시 null.find하는 문제(정확히는 delete했을 때 broadcast시, null이 되는 문제)
-   - guest 변화가 서버 host기록에 저장되지않음. (host작성 -> guest작성 -> 새로고침 -> guest는 작성이전상태)
-   - host여부를 보여줬으면 좋겠는데 -> dial 색상으로 완료
-   - 색상으로 완료하는게 맞음? host 표기좀 -> 호스트용 아이콘 생성
-   - 왜 올때마다 connection lost임 local에서도 -> 첫입장 플래그로 false초기화시 문제 해결
-   - clearFlow까먹었네
-     - clearFlow를 allow_type에 안넣어놓고 왜 서버가 꺼지지 이러고있었네
-     - 하는김에 호스트 연결종료되면 오버레이로 덮어씌움
-     - 이거덕분에 타입 다른 메세지로 인한 ValueError시에 발생하는 서버 오류 해결함
-   - fitView는 어쩔까 -> 데이터에 영향이 없으니 제외
-   - help가 없다 튜토리얼 제작하기(무조건만들것) -> 완성
-   - connection lost가 로컬 상태일때 사라지지 않는 버그 수정
-   - host의 색상을 조금 더 밝게 수정함
-   - 가이드에 줌아웃, 끌어내리기 설명 추가하기 -> 테스트해보니 노드클릭하다보면 자연스럽게 알게되는 동작
-   - turbo에 컬러 적용이 안되는 버그 재발생 -> connectLine 안고친거 포함해서 완료
-   - 가이드 화살표말고 그냥 클릭하면 넘어가기 -> 완료
-   - turbo의 테두리를 조금 둥글게 수정함
-   - local에 host가있네? -> 수정완료
-   - 새 노드 생성위치 화면 중앙으로 변경
-   - connectEnd 부활시키기... -> 프로젝트를 이정도 진행했더니 이제 바로 만들 수 있게됨
-   - host가 데이터갖고오면 데이터 open할 수 있는 상태로 만들기... -> 완료
-     - 데이터 크기 확인 -> ip 확인 -> 타입 확인 -> 기록저장하고 클라이언트로 허용여부 던지기
-     - 현재 모두허용인데 roomId있을때 host일경우 서버로 던지기(근데 클라이언트로 해야할듯)
-     - host 업데이트용 데이터 사전 규악 batch_update_host 추가
-   - 다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기
-   - flow를 정리할 수 있게 하면 어떨까? UI적 정리 말고 데이터 정리로
-     - 연결된 노드가 많을수록 밝아지는 UI도 좋아보인다
-     - 연결된 노드의 정의는 leaf의 합계로?
-     - 이거는 edge만 조사하면된다. regex로 걸러내서 빈도가 많은 노드 검출 가능
-     - 통계는 서버에서 하십시오 내용이 많을거같음
+    - connect가 끊겼을 때 알림이 콘솔에서밖에 없음
+    - socket시에 save/restore는 socket이 끊기면 없어져야함(일회용)
+    - elk_layout이 await이므로 async()했을때 바로 적용이 되지 않는 문제
+    - node delete시 null.find하는 문제(정확히는 delete했을 때 broadcast시, null이 되는 문제)
+    - guest 변화가 서버 host기록에 저장되지않음. (host작성 -> guest작성 -> 새로고침 -> guest는 작성이전상태)
+    - host여부를 보여줬으면 좋겠는데 -> dial 색상으로 완료
+    - 색상으로 완료하는게 맞음? host 표기좀 -> 호스트용 아이콘 생성
+    - 왜 올때마다 connection lost임 local에서도 -> 첫입장 플래그로 false초기화시 문제 해결
+    - clearFlow까먹었네
+      - clearFlow를 allow_type에 안넣어놓고 왜 서버가 꺼지지 이러고있었네
+      - 하는김에 호스트 연결종료되면 오버레이로 덮어씌움
+      - 이거덕분에 타입 다른 메세지로 인한 ValueError시에 발생하는 서버 오류 해결함
+    - fitView는 어쩔까 -> 데이터에 영향이 없으니 제외
+    - help가 없다 튜토리얼 제작하기(무조건만들것) -> 완성
+    - connection lost가 로컬 상태일때 사라지지 않는 버그 수정
+    - host의 색상을 조금 더 밝게 수정함
+    - 가이드에 줌아웃, 끌어내리기 설명 추가하기 -> 테스트해보니 노드클릭하다보면 자연스럽게 알게되는 동작
+    - turbo에 컬러 적용이 안되는 버그 재발생 -> connectLine 안고친거 포함해서 완료
+    - 가이드 화살표말고 그냥 클릭하면 넘어가기 -> 완료
+    - turbo의 테두리를 조금 둥글게 수정함
+    - local에 host가있네? -> 수정완료
+    - 새 노드 생성위치 화면 중앙으로 변경
+    - connectEnd 부활시키기... -> 프로젝트를 이정도 진행했더니 이제 바로 만들 수 있게됨
+    - host가 데이터갖고오면 데이터 open할 수 있는 상태로 만들기... -> 완료
+      - 데이터 크기 확인 -> ip 확인 -> 타입 확인 -> 기록저장하고 클라이언트로 허용여부 던지기
+      - 현재 모두허용인데 roomId있을때 host일경우 서버로 던지기(근데 클라이언트로 해야할듯)
+      - host 업데이트용 데이터 사전 규악 batch_update_host 추가
+    - 다 하고 2차 사용성테스트 기록용 사진 하나 찍어놓기
+    - flow를 정리할 수 있게 하면 어떨까? UI적 정리 말고 데이터 정리로
+      - 연결된 노드가 많을수록 밝아지는 UI도 좋아보인다
+      - 연결된 노드의 정의는 leaf의 합계로?
+      - 이거는 edge만 조사하면된다. regex로 걸러내서 빈도가 많은 노드 검출 가능
+      - 통계는 서버에서 하십시오 내용이 많을거같음
       - 어떤 통계를 할지는 다음 테스트에 하자. 아이디어없이 시간끄는느낌?
 
   - 발동 조건을 찾지 못했는데 게스트 data포함 입장시 duplicate문제있음 -> 해결완료
@@ -402,7 +402,7 @@
   - DNS 연결 완료
   - redis 사용예정 DNS 구매로 해결
 
-  ## 라이브 상황에서 hostFlag가 간혹 제대로 작동하지 않는 오류 발생
+  ### 라이브 상황에서 hostFlag가 간혹 제대로 작동하지 않는 오류 발생
     - 브라우저가 최초로 접속하면 hostFlag가 동작하지 않음을 확인함
     - HashRouter로 변경
     - Router 문제 수정중 - urlCopy 고장남
@@ -447,6 +447,13 @@
   <summary>progress develop note</summary>
   
 ## develop task - progress
+- dial에 붙일거
+  - 방 로그 summary API -> (roomId) 그냥 단순 리턴
+  - 참여자 수 API -> (roomId) 그냥 단순 리턴
+  - 노드 검색 API -> (roomId, node.id) 검색후 해당 노드 selected하면 좋을듯
+- 초기 dial 접기 설정 완료
+- Ctrl + C, Ctrl + V 기능 -> node_add에 fontSize 추가 -> 완료
+- nodepanel auto focus될 때 select -> 완료
 
 </details>
 
