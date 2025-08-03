@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ban_storage import load_ban_list, save_ban_list
 from collections import defaultdict, deque
 from dotenv import load_dotenv
+from multiprocessing import shared_memory # 락걸어서 동기화
 import json
 import time
 import logging
@@ -11,7 +12,7 @@ import os
 
 load_dotenv()
 
-MAX_CONNECTIONS_PER_IP = os.environ.get('MAX_CONNECTIONS_PER_IP')
+MAX_CONNECTIONS_PER_IP = int(os.environ.get('MAX_CONNECTIONS_PER_IP'))
 ROOT_PATH = os.environ.get('ROOT_PATH')
 ALLOW_ORIGIN = os.environ.get('ALLOW_ORIGIN')
 
